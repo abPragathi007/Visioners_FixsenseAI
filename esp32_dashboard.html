@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32 IoT Vehicle Dashboard</title>
+  <meta name="description" content="Real-time ESP32 IoT Vehicle Health Dashboard with live sensor monitoring, breakdown detection, smart alerts and voice notifications.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0f;
+      --card-bg:   #1a1a1f;
+      --card-bd:   #2a2a35;
+      --orange:    #f97316;
+      --red:       #ef4444;
+      --green:     #22c55e;
+      --yellow:    #eab308;
+      --blue:      #60a5fa;
+      --txt:       #ffffff;
+      --txt-sec:   #9ca3af;
+      --txt-muted: #6b7280;
+      --r-card:    12px;
+      --r-btn:     8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--txt);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── SCROLLBAR ─────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #2a2a35; border-radius: 4px; }
+
+    /* ─── LAYOUT ────────────────────────────────── */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 16px; }
+    }
+
+    /* ─── HEADER ─────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--card-bd);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, rgba(249,115,22,0.2), rgba(249,115,22,0.05));
+      border: 1px solid rgba(249,115,22,0.3);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 rgba(249,115,22,0); }
+      50% { box-shadow: 0 0 14px rgba(249,115,22,0.3); }
+    }
+
+    .header-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--txt);
+      letter-spacing: -0.3px;
+    }
+
+    .header-subtitle {
+      font-size: 11px;
+      color: var(--txt-muted);
+      margin-top: 2px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .conn-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(34,197,94,0.08);
+      border: 1px solid rgba(34,197,94,0.2);
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--txt-sec);
+      transition: all 0.3s ease;
+    }
+
+    .conn-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: blink 2s ease-in-out infinite;
+      transition: background 0.3s ease;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ─── CARD ────────────────────────────────────── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-bd);
+      border-radius: var(--r-card);
+      padding: 20px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: #3a3a48;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+
+    .card-sm { padding: 16px; }
+
+    /* ─── GRID ────────────────────────────────────── */
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .full-width { margin-bottom: 16px; }
+
+    /* ─── BADGE ───────────────────────────────────── */
+    .badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .badge-green  { background: rgba(34,197,94,0.15);  color: var(--green); }
+    .badge-orange { background: rgba(249,115,22,0.15); color: var(--orange); }
+    .badge-red    { background: rgba(239,68,68,0.15);  color: var(--red); }
+    .badge-yellow { background: rgba(234,179,8,0.15);  color: var(--yellow); }
+    .badge-blue   { background: rgba(59,130,246,0.15); color: var(--blue); }
+    .badge-grey   { background: rgba(107,114,128,0.15); color: var(--txt-muted); }
+
+    /* ─── BUTTONS ─────────────────────────────────── */
+    .btn {
+      border: 1px solid var(--card-bd);
+      background: transparent;
+      color: var(--txt);
+      border-radius: var(--r-btn);
+      padding: 8px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover { background: rgba(255,255,255,0.05); border-color: #3a3a48; }
+
+    .btn-primary {
+      background: var(--orange);
+      color: #fff;
+      border-color: var(--orange);
+    }
+
+    .btn-primary:hover { background: #ea6b10; border-color: #ea6b10; box-shadow: 0 4px 12px rgba(249,115,22,0.3); }
+
+    /* ─── SECTION 1: DEVICE CONNECTION ─────────────── */
+    #device-card {
+      margin-bottom: 16px;
+    }
+
+    .device-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .device-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .device-icon-box {
+      width: 42px;
+      height: 42px;
+      background: var(--card-bd);
+      border-radius: var(--r-btn);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .device-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--txt);
+    }
+
+    .device-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--txt-sec);
+      margin-top: 4px;
+    }
+
+    .device-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* WiFi bars */
+    .wifi-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 18px;
+    }
+
+    .wifi-bar {
+      width: 5px;
+      border-radius: 2px;
+      background: var(--green);
+      transition: background 0.3s ease;
+    }
+
+    .wifi-bar.inactive { background: var(--card-bd); }
+
+    /* Scan dropdown */
+    #scan-dropdown {
+      display: none;
+      margin-top: 14px;
+      background: #12121a;
+      border: 1px solid var(--card-bd);
+      border-radius: var(--r-btn);
+      padding: 12px;
+      animation: fadeDown 0.2s ease;
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .scan-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 4px;
+      border-bottom: 1px solid rgba(42,42,53,0.6);
+      font-size: 13px;
+      color: var(--txt);
+    }
+
+    .scan-row:last-child { border-bottom: none; }
+
+    .device-caption {
+      font-family: monospace;
+      font-size: 11px;
+      color: var(--txt-muted);
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(42,42,53,0.5);
+    }
+
+    /* ─── SECTION 2: METRIC CARDS ───────────────────── */
+    .metric-label {
+      font-size: 12px;
+      color: var(--txt-sec);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .metric-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .metric-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+      transition: color 0.5s ease;
+    }
+
+    .metric-sub {
+      font-size: 11px;
+      color: var(--txt-sec);
+      margin-top: 6px;
+    }
+
+    .progress-track {
+      height: 6px;
+      background: var(--card-bd);
+      border-radius: 3px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s ease, background 0.5s ease;
+    }
+
+    /* ─── SECTION 3: CHART ───────────────────────────── */
+    .chart-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .chart-tab {
+      border: 1px solid var(--card-bd);
+      background: transparent;
+      color: var(--txt-sec);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .chart-tab:hover { border-color: var(--orange); color: var(--orange); }
+
+    .chart-tab.active {
+      background: var(--orange);
+      color: #fff;
+      border-color: var(--orange);
+      box-shadow: 0 2px 10px rgba(249,115,22,0.3);
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--txt-sec);
+    }
+
+    .legend-actual {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      background: var(--red);
+    }
+
+    .legend-predicted {
+      width: 18px;
+      height: 2px;
+      background: repeating-linear-gradient(90deg, var(--orange) 0, var(--orange) 4px, transparent 4px, transparent 8px);
+      margin-top: 1px;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 200px;
+    }
+
+    /* ─── SECTION 4: BREAKDOWN + ALERTS ─────────────── */
+    .breakdown-card {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.25);
+      border-radius: var(--r-card);
+      padding: 16px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .breakdown-card:hover { box-shadow: 0 4px 20px rgba(239,68,68,0.12); }
+
+    .breakdown-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .breakdown-type {
+      font-size: 12px;
+      color: var(--red);
+      font-weight: 500;
+    }
+
+    .breakdown-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--txt);
+      margin-bottom: 8px;
+    }
+
+    .breakdown-detail {
+      font-size: 12px;
+      color: var(--txt-sec);
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+
+    .alert-feed { }
+
+    .alert-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--card-bd);
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-6px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .alert-row:last-child { border-bottom: none; }
+
+    .alert-dot { font-size: 14px; margin-top: 2px; flex-shrink: 0; }
+
+    .alert-body { flex: 1; }
+
+    .alert-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--txt);
+    }
+
+    .alert-desc {
+      font-size: 12px;
+      color: var(--txt-sec);
+      margin-top: 2px;
+    }
+
+    .alert-time {
+      font-size: 11px;
+      color: var(--txt-muted);
+      margin-left: auto;
+      white-space: nowrap;
+      margin-top: 3px;
+    }
+
+    /* ─── SECTION 5: ALL SENSORS ─────────────────────── */
+    .sensor-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(42,42,53,0.5);
+      transition: background 0.2s ease;
+    }
+
+    .sensor-row:last-child { border-bottom: none; }
+
+    .sensor-row:hover { background: rgba(255,255,255,0.02); border-radius: 6px; padding-left: 6px; }
+
+    .sensor-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--r-btn);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .sensor-info { flex: 1; }
+
+    .sensor-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--txt);
+    }
+
+    .sensor-val {
+      font-size: 11px;
+      color: var(--txt-sec);
+      margin-top: 2px;
+    }
+
+    /* ─── SECTION 6: LOCATION + SERVICE ─────────────── */
+    .map-placeholder {
+      background: #12121a;
+      border-radius: var(--r-btn);
+      height: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .map-placeholder::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 60%, rgba(249,115,22,0.06) 0%, transparent 70%);
+    }
+
+    .map-pin { font-size: 28px; animation: bounce 2s ease-in-out infinite; }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .map-coords { font-size: 12px; color: var(--txt-sec); }
+
+    .service-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--txt);
+      padding: 6px 0;
+    }
+
+    .service-row + .service-row { border-top: 1px solid rgba(42,42,53,0.4); margin-top: 4px; padding-top: 10px; }
+
+    /* ─── SECTION 7: VOICE + CONNECTION ─────────────── */
+    .voice-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .conn-mode-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 13px;
+      color: var(--txt);
+    }
+
+    .conn-mode-row + .conn-mode-row {
+      border-top: 1px solid rgba(42,42,53,0.5);
+      margin-top: 4px;
+      padding-top: 12px;
+    }
+
+    .conn-caption {
+      font-family: monospace;
+      font-size: 11px;
+      color: var(--txt-muted);
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(42,42,53,0.4);
+    }
+
+    /* ─── SECTION HEADER / TITLES ─────────────────── */
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--txt);
+      letter-spacing: -0.1px;
+    }
+
+    .section-sub {
+      font-size: 12px;
+      color: var(--txt-sec);
+      margin-top: 2px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* ─── DISCONNECT STATE ────────────────────────── */
+    body.disconnected .conn-indicator {
+      background: rgba(239,68,68,0.08);
+      border-color: rgba(239,68,68,0.2);
+    }
+
+    /* ─── PULSE ANIMATION FOR LIVE DATA ──────────── */
+    @keyframes numPop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    .popping { animation: numPop 0.35s ease; }
+
+    /* ─── RESPONSIVE ──────────────────────────────── */
+    @media (max-width: 500px) {
+      .header-title { font-size: 16px; }
+      .metric-value { font-size: 24px; }
+      .device-right { gap: 6px; }
+      .btn { padding: 7px 10px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ═══════════════════════════════════════════════
+       HEADER
+  ═══════════════════════════════════════════════ -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-icon">📡</div>
+      <div>
+        <div class="header-title">ESP32 IoT Dashboard</div>
+        <div class="header-subtitle">Real-time vehicle health monitoring</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="conn-indicator">
+        <div class="conn-dot" id="header-dot"></div>
+        <span id="header-status">Connected</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 1 — DEVICE CONNECTION
+  ═══════════════════════════════════════════════ -->
+  <div class="card full-width" id="device-card">
+    <div class="device-inner">
+      <div class="device-left">
+        <div class="device-icon-box">📡</div>
+        <div>
+          <div class="device-name">SmartVehicle_01</div>
+          <div class="device-status">
+            <div class="conn-dot" id="conn-dot"></div>
+            <span id="conn-status">Connected via WiFi</span>
+          </div>
+        </div>
+      </div>
+      <div class="device-right">
+        <!-- WiFi Bars -->
+        <div class="wifi-bars" id="wifi-bars">
+          <div class="wifi-bar" style="height:6px"></div>
+          <div class="wifi-bar" style="height:10px"></div>
+          <div class="wifi-bar" style="height:14px"></div>
+          <div class="wifi-bar" style="height:18px"></div>
+        </div>
+        <span class="badge badge-green" id="conn-badge">✓ Connected</span>
+        <button class="btn" id="conn-btn" onclick="toggleConnect()">Disconnect</button>
+        <button class="btn" onclick="toggleScan()">Scan Devices</button>
+      </div>
+    </div>
+
+    <!-- Scan Dropdown -->
+    <div id="scan-dropdown">
+      <div class="scan-row">
+        <span>📡 SmartVehicle_01</span>
+        <span class="badge badge-green">In range</span>
+      </div>
+      <div class="scan-row">
+        <span>🔵 BikeDevice_02</span>
+        <span class="badge badge-blue">In range</span>
+      </div>
+      <div class="scan-row">
+        <span>⚪ AutoSensor_03</span>
+        <span class="badge badge-grey">Weak signal</span>
+      </div>
+    </div>
+
+    <div class="device-caption">ESP32 → WiFi → Firebase → Dashboard</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 2 — LIVE METRIC CARDS
+  ═══════════════════════════════════════════════ -->
+  <div class="grid-3">
+    <!-- Engine Temp -->
+    <div class="card card-sm">
+      <div class="metric-label">🌡️ Engine Temp</div>
+      <div class="metric-row">
+        <div class="metric-value" id="m-temp" style="color:#ef4444">92.0°C</div>
+      </div>
+      <div class="metric-sub" id="s-temp">Warning: High</div>
+      <div class="progress-track">
+        <div class="progress-bar" id="p-temp" style="width:53%;background:#ef4444"></div>
+      </div>
+    </div>
+
+    <!-- Battery -->
+    <div class="card card-sm">
+      <div class="metric-label">🔋 Battery</div>
+      <div class="metric-row">
+        <div class="metric-value" id="m-bat" style="color:#f97316">38%</div>
+      </div>
+      <div class="metric-sub" id="s-bat">Low charge</div>
+      <div class="progress-track">
+        <div class="progress-bar" id="p-bat" style="width:38%;background:#f97316"></div>
+      </div>
+    </div>
+
+    <!-- Vibration -->
+    <div class="card card-sm">
+      <div class="metric-label">📳 Vibration</div>
+      <div class="metric-row">
+        <div class="metric-value" id="m-vib" style="color:#22c55e">0.30g</div>
+      </div>
+      <div class="metric-sub" id="s-vib">Normal</div>
+      <div class="progress-track">
+        <div class="progress-bar" id="p-vib" style="width:15%;background:#22c55e"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 3 — REAL-TIME CHART
+  ═══════════════════════════════════════════════ -->
+  <div class="card full-width">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Real-Time Sensor Chart</div>
+        <div class="section-sub">Live data · Updates every 2s</div>
+      </div>
+      <div class="chart-tabs">
+        <button class="chart-tab active" id="tab-temp" onclick="switchTab('temp', this)">Temp</button>
+        <button class="chart-tab" id="tab-battery" onclick="switchTab('battery', this)">Battery</button>
+        <button class="chart-tab" id="tab-vibration" onclick="switchTab('vibration', this)">Vibration</button>
+      </div>
+    </div>
+    <div class="chart-legend">
+      <div class="legend-item">
+        <div class="legend-actual"></div>
+        <span>Actual</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-predicted"></div>
+        <span>Predicted</span>
+      </div>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="iot-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 4 — BREAKDOWN + SMART ALERTS
+  ═══════════════════════════════════════════════ -->
+  <div class="grid-2">
+    <!-- Breakdown Detection -->
+    <div class="breakdown-card">
+      <div class="breakdown-header">
+        <span class="breakdown-type">⚠ Warning Detected</span>
+        <span class="badge badge-red">WARNING</span>
+      </div>
+      <div class="breakdown-title">Engine Overheating</div>
+      <div class="breakdown-detail">
+        <strong style="color:#fff">Reason:</strong> Heavy traffic + low coolant detected by sensor
+      </div>
+      <div class="breakdown-detail" style="margin-bottom:14px">
+        <strong style="color:#fff">Fix:</strong> Stop vehicle · Cool engine · Check coolant level
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="getFixGuide()">Get Fix Guide →</button>
+
+      <!-- Fix guide expandable -->
+      <div id="fix-guide" style="display:none;margin-top:12px;background:rgba(0,0,0,0.3);border-radius:8px;padding:12px;">
+        <div style="font-size:12px;color:#9ca3af;line-height:1.8">
+          <div>1. 🚗 Pull over safely and turn off the engine</div>
+          <div>2. ⏳ Wait 15–20 mins for engine to cool down</div>
+          <div>3. 🧴 Check coolant reservoir — top up if low</div>
+          <div>4. 🔍 Inspect for leaks in hoses or radiator</div>
+          <div>5. 🏪 Visit nearest service center if issue persists</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Smart Alerts Feed -->
+    <div class="card card-sm">
+      <div class="section-header">
+        <div class="section-title">Smart Alerts</div>
+        <span class="badge badge-red">3 Active</span>
+      </div>
+      <div class="alert-feed">
+        <div class="alert-row">
+          <span class="alert-dot">🔴</span>
+          <div class="alert-body">
+            <div class="alert-title">Engine overheating</div>
+            <div class="alert-desc">Temp reached 92°C · Reduce load</div>
+          </div>
+          <div class="alert-time">Now</div>
+        </div>
+        <div class="alert-row">
+          <span class="alert-dot">🟠</span>
+          <div class="alert-body">
+            <div class="alert-title">Battery critically low</div>
+            <div class="alert-desc">Below 40% · Recharge soon</div>
+          </div>
+          <div class="alert-time">2m ago</div>
+        </div>
+        <div class="alert-row">
+          <span class="alert-dot">🟡</span>
+          <div class="alert-body">
+            <div class="alert-title">Tire pressure low</div>
+            <div class="alert-desc">Front tire: 26 PSI</div>
+          </div>
+          <div class="alert-time">8m ago</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 5 — ALL SENSORS PANEL
+  ═══════════════════════════════════════════════ -->
+  <div class="card full-width">
+    <div class="section-header">
+      <div class="section-title">All Sensors</div>
+      <span class="badge badge-green">Live</span>
+    </div>
+    <div>
+      <div class="sensor-row">
+        <div class="sensor-icon" style="background:rgba(239,68,68,0.15)">🌡️</div>
+        <div class="sensor-info">
+          <div class="sensor-name">Engine Temp</div>
+          <div class="sensor-val" id="sv-temp">92°C · Normal &lt;95°C</div>
+        </div>
+        <span class="badge badge-orange">High</span>
+      </div>
+      <div class="sensor-row">
+        <div class="sensor-icon" style="background:rgba(249,115,22,0.15)">🔋</div>
+        <div class="sensor-info">
+          <div class="sensor-name">Battery</div>
+          <div class="sensor-val" id="sv-bat">38% · 12.1V</div>
+        </div>
+        <span class="badge badge-red">Low</span>
+      </div>
+      <div class="sensor-row">
+        <div class="sensor-icon" style="background:rgba(107,114,128,0.15)">🛞</div>
+        <div class="sensor-info">
+          <div class="sensor-name">Tire Pressure</div>
+          <div class="sensor-val">F: 26 PSI · R: 30 PSI</div>
+        </div>
+        <span class="badge badge-orange">Check</span>
+      </div>
+      <div class="sensor-row">
+        <div class="sensor-icon" style="background:rgba(34,197,94,0.15)">📳</div>
+        <div class="sensor-info">
+          <div class="sensor-name">Vibration</div>
+          <div class="sensor-val" id="sv-vib">0.30g · Smooth</div>
+        </div>
+        <span class="badge badge-green" id="sv-vib-badge">Normal</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 6 — LOCATION + SERVICE RECOMMENDATIONS
+  ═══════════════════════════════════════════════ -->
+  <div class="grid-2">
+    <!-- Location -->
+    <div class="card card-sm">
+      <div class="section-header" style="margin-bottom:0">
+        <div>
+          <div class="section-title">Vehicle Location</div>
+          <div class="section-sub">Indiranagar, Bengaluru · Live tracking</div>
+        </div>
+        <span class="badge badge-green">GPS Active</span>
+      </div>
+      <div class="map-placeholder">
+        <div class="map-pin">📍</div>
+        <div class="map-coords">GPS: 12.9784° N, 77.6408° E</div>
+      </div>
+    </div>
+
+    <!-- Service Recommendations -->
+    <div class="card card-sm">
+      <div class="section-title" style="margin-bottom:12px">Service Recommendations</div>
+      <div>
+        <div class="service-row">
+          <span>🔧</span>
+          <span>Recharge battery</span>
+          <span class="badge badge-red" style="margin-left:auto">Urgent</span>
+        </div>
+        <div class="service-row">
+          <span>🌡️</span>
+          <span>Check coolant level</span>
+          <span class="badge badge-orange" style="margin-left:auto">Soon</span>
+        </div>
+        <div class="service-row">
+          <span>🛞</span>
+          <span>Inflate front tire</span>
+          <span class="badge badge-orange" style="margin-left:auto">Soon</span>
+        </div>
+        <div class="service-row">
+          <span>🛢️</span>
+          <span>Oil change due</span>
+          <span class="badge badge-blue" style="margin-left:auto">Planned</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 7 — VOICE ALERT + CONNECTION MODE
+  ═══════════════════════════════════════════════ -->
+  <div class="grid-2">
+    <!-- Voice Alert -->
+    <div class="card card-sm">
+      <div class="section-title" style="margin-bottom:12px">🔊 Voice Alert</div>
+      <div class="voice-row">
+        <button class="btn" onclick="speakAlert()" id="speak-btn">🔊 Speak Alert</button>
+        <span id="voice-status" style="font-size:12px;color:#9ca3af">Click to announce latest alert</span>
+      </div>
+      <!-- Alert selector -->
+      <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn" style="font-size:11px;padding:5px 10px" onclick="speakCustom('engine')">Engine</button>
+        <button class="btn" style="font-size:11px;padding:5px 10px" onclick="speakCustom('battery')">Battery</button>
+        <button class="btn" style="font-size:11px;padding:5px 10px" onclick="speakCustom('tire')">Tire</button>
+      </div>
+    </div>
+
+    <!-- Connection Mode -->
+    <div class="card card-sm">
+      <div class="section-title" style="margin-bottom:12px">Connection Mode</div>
+      <div class="conn-mode-row">
+        <span>📶 WiFi (ESP32 → Server)</span>
+        <span class="badge badge-green" id="wifi-mode-badge">Active</span>
+      </div>
+      <div class="conn-mode-row">
+        <span>🔵 Bluetooth (Demo mode)</span>
+        <span class="badge badge-grey">Idle</span>
+      </div>
+      <div class="conn-caption">Data flow: ESP32 → WiFi → Firebase → Dashboard</div>
+    </div>
+  </div>
+
+  <!-- Footer spacing -->
+  <div style="height:24px"></div>
+
+</div><!-- /container -->
+
+<!-- ═══════════════════════════════════════════════════
+     JAVASCRIPT — ALL INLINE
+═══════════════════════════════════════════════════ -->
+<script>
+/* ─── STATE ─────────────────────────────────── */
+let iotConnected = true;
+let iotChart = null;
+let liveInterval = null;
+let currentSensor = 'temp';
+
+/* ─── CHART CONFIGS ──────────────────────────── */
+const chartConfigs = {
+  temp:      { base: 88, range: 8,    color: '#ef4444', label: 'Temperature (°C)', unit: '°C' },
+  battery:   { base: 40, range: 5,    color: '#f97316', label: 'Battery (%)',       unit: '%'  },
+  vibration: { base: 0.3, range: 0.15, color: '#22c55e', label: 'Vibration (g)',    unit: 'g'  }
+};
+
+/* ─── HELPERS ────────────────────────────────── */
+function genInitialData(base, range, count) {
+  const data = [];
+  let v = base;
+  for (let i = 0; i < count; i++) {
+    v += (Math.random() - 0.48) * range * 0.4;
+    v = Math.max(base - range, Math.min(base + range, v));
+    data.push(parseFloat(v.toFixed(3)));
+  }
+  return data;
+}
+
+function genLabels(count) {
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(Date.now() - (count - 1 - i) * 2000);
+    return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  });
+}
+
+/* ─── CHART INIT ─────────────────────────────── */
+function initChart(sensor) {
+  const canvas = document.getElementById('iot-chart');
+  if (!canvas) return;
+
+  const cfg = chartConfigs[sensor];
+  const actual = genInitialData(cfg.base, cfg.range, 20);
+  const labels = genLabels(20);
+  const predicted = actual.map((v, i) =>
+    i >= 16
+      ? parseFloat((v + (Math.random() - 0.4) * cfg.range * 0.5).toFixed(3))
+      : null
+  );
+
+  if (iotChart) { iotChart.destroy(); iotChart = null; }
+
+  iotChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Actual',
+          data: actual,
+          borderColor: cfg.color,
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          tension: 0.4
+        },
+        {
+          label: 'Predicted',
+          data: predicted,
+          borderColor: '#f97316',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [5, 4],
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          tension: 0.4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a1f',
+          borderColor: '#2a2a35',
+          borderWidth: 1,
+          titleColor: '#fff',
+          bodyColor: '#9ca3af',
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y.toFixed(2)}${cfg.unit}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#9ca3af', font: { size: 10 }, maxTicksLimit: 6 },
+          grid: { color: '#2a2a35' }
+        },
+        y: {
+          ticks: { color: '#9ca3af', font: { size: 10 } },
+          grid: { color: '#2a2a35' }
+        }
+      }
+    }
+  });
+}
+
+/* ─── TAB SWITCH ─────────────────────────────── */
+function switchTab(sensor, btn) {
+  currentSensor = sensor;
+  document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+
+  // Update legend colour
+  const dot = document.querySelector('.legend-actual');
+  if (dot) dot.style.background = chartConfigs[sensor].color;
+
+  initChart(sensor);
+}
+
+/* ─── METRIC CARD UPDATE ─────────────────────── */
+function updateMetricCards(temp, bat, vib) {
+  /* Temperature */
+  const tempEl = document.getElementById('m-temp');
+  const tempColor = temp > 100 ? '#ef4444' : temp > 90 ? '#f97316' : '#22c55e';
+  tempEl.textContent = temp.toFixed(1) + '°C';
+  tempEl.style.color = tempColor;
+  document.getElementById('s-temp').textContent =
+    temp > 100 ? 'Critical: Overheat' : temp > 90 ? 'Warning: High' : 'Normal';
+  const tempPct = Math.min(100, Math.max(0, ((temp - 60) / 60 * 100)));
+  const pTemp = document.getElementById('p-temp');
+  pTemp.style.width = tempPct.toFixed(0) + '%';
+  pTemp.style.background = tempColor;
+
+  /* Battery */
+  const batEl = document.getElementById('m-bat');
+  const batColor = bat < 30 ? '#ef4444' : bat < 50 ? '#f97316' : '#22c55e';
+  batEl.textContent = bat.toFixed(0) + '%';
+  batEl.style.color = batColor;
+  document.getElementById('s-bat').textContent =
+    bat < 30 ? 'Critical: Recharge now' : bat < 50 ? 'Low charge' : 'Good';
+  const pBat = document.getElementById('p-bat');
+  pBat.style.width = bat.toFixed(0) + '%';
+  pBat.style.background = batColor;
+
+  /* Vibration */
+  const vibEl = document.getElementById('m-vib');
+  const vibColor = vib > 1.2 ? '#ef4444' : vib > 0.6 ? '#f97316' : '#22c55e';
+  vibEl.textContent = vib.toFixed(2) + 'g';
+  vibEl.style.color = vibColor;
+  document.getElementById('s-vib').textContent =
+    vib > 1.2 ? 'Rough ride' : vib > 0.6 ? 'Moderate' : 'Normal';
+  const vibPct = Math.min(100, (vib / 2 * 100));
+  const pVib = document.getElementById('p-vib');
+  pVib.style.width = vibPct.toFixed(0) + '%';
+  pVib.style.background = vibColor;
+
+  /* Sensor panel syncs */
+  const svTemp = document.getElementById('sv-temp');
+  if (svTemp) svTemp.textContent = temp.toFixed(1) + '°C · Normal <95°C';
+  const svBat = document.getElementById('sv-bat');
+  if (svBat) svBat.textContent = bat.toFixed(0) + '% · 12.1V';
+  const svVib = document.getElementById('sv-vib');
+  if (svVib) svVib.textContent = vib.toFixed(2) + 'g · ' + (vib < 0.6 ? 'Smooth' : 'Bumpy');
+
+  /* Pop animation */
+  [tempEl, batEl, vibEl].forEach(el => {
+    el.classList.remove('popping');
+    void el.offsetWidth; // reflow
+    el.classList.add('popping');
+  });
+}
+
+/* ─── LIVE UPDATES ───────────────────────────── */
+function startLiveUpdates() {
+  clearInterval(liveInterval);
+  liveInterval = setInterval(() => {
+    if (!iotConnected) return;
+
+    const cfg = chartConfigs[currentSensor];
+    const val = parseFloat((cfg.base + (Math.random() - 0.48) * cfg.range).toFixed(3));
+    const label = new Date().toLocaleTimeString('en-IN', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+
+    if (iotChart) {
+      iotChart.data.labels.push(label);
+      iotChart.data.datasets[0].data.push(val);
+
+      // Extend predicted for last 4 points
+      const len = iotChart.data.datasets[0].data.length;
+      iotChart.data.datasets[1].data = iotChart.data.datasets[0].data.map((v, i) =>
+        i >= len - 4
+          ? parseFloat((v + (Math.random() - 0.4) * cfg.range * 0.5).toFixed(3))
+          : null
+      );
+
+      if (iotChart.data.labels.length > 25) {
+        iotChart.data.labels.shift();
+        iotChart.data.datasets[0].data.shift();
+        iotChart.data.datasets[1].data.shift();
+      }
+      iotChart.update('none');
+    }
+
+    // Update metric cards
+    const newTemp = parseFloat((88 + (Math.random() - 0.48) * 8).toFixed(1));
+    const newBat  = parseFloat((40 + (Math.random() - 0.48) * 5).toFixed(0));
+    const newVib  = parseFloat((0.3 + (Math.random() - 0.48) * 0.15).toFixed(2));
+    updateMetricCards(newTemp, newBat, newVib);
+  }, 2000);
+}
+
+/* ─── CONNECT / DISCONNECT ───────────────────── */
+function toggleConnect() {
+  iotConnected = !iotConnected;
+
+  const dot = document.getElementById('conn-dot');
+  const hDot = document.getElementById('header-dot');
+  const status = document.getElementById('conn-status');
+  const hStatus = document.getElementById('header-status');
+  const btn = document.getElementById('conn-btn');
+  const badge = document.getElementById('conn-badge');
+  const wifiBars = document.getElementById('wifi-bars');
+  const wifiModeBadge = document.getElementById('wifi-mode-badge');
+
+  if (iotConnected) {
+    dot.style.background = '#22c55e';
+    hDot.style.background = '#22c55e';
+    status.textContent = 'Connected via WiFi';
+    hStatus.textContent = 'Connected';
+    btn.textContent = 'Disconnect';
+    badge.textContent = '✓ Connected';
+    badge.className = 'badge badge-green';
+    wifiBars && wifiBars.querySelectorAll('.wifi-bar').forEach(b => b.classList.remove('inactive'));
+    wifiModeBadge && (wifiModeBadge.textContent = 'Active', wifiModeBadge.className = 'badge badge-green');
+    startLiveUpdates();
+    document.body.classList.remove('disconnected');
+  } else {
+    dot.style.background = '#ef4444';
+    hDot.style.background = '#ef4444';
+    status.textContent = 'Disconnected';
+    hStatus.textContent = 'Disconnected';
+    btn.textContent = 'Connect';
+    badge.textContent = '✗ Offline';
+    badge.className = 'badge badge-red';
+    wifiBars && wifiBars.querySelectorAll('.wifi-bar').forEach(b => b.classList.add('inactive'));
+    wifiModeBadge && (wifiModeBadge.textContent = 'Idle', wifiModeBadge.className = 'badge badge-grey');
+    clearInterval(liveInterval);
+    document.body.classList.add('disconnected');
+  }
+}
+
+/* ─── SCAN DROPDOWN ──────────────────────────── */
+function toggleScan() {
+  const el = document.getElementById('scan-dropdown');
+  el.style.display = el.style.display === 'none' || el.style.display === '' ? 'block' : 'none';
+}
+
+/* ─── FIX GUIDE ──────────────────────────────── */
+function getFixGuide() {
+  const el = document.getElementById('fix-guide');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  const btn = event.currentTarget;
+  btn.textContent = el.style.display === 'block' ? 'Hide Fix Guide ↑' : 'Get Fix Guide →';
+}
+
+/* ─── VOICE ALERTS ───────────────────────────── */
+const alertMessages = {
+  engine:  'Warning. Engine overheating detected. Temperature is 92 degrees Celsius. Please stop your vehicle and check the coolant level immediately.',
+  battery: 'Warning. Battery level is critically low at 38 percent. Please recharge your vehicle battery as soon as possible.',
+  tire:    'Alert. Tire pressure is low on the front tire at 26 PSI. Please inflate to the recommended pressure of 32 PSI.'
+};
+
+function speakAlert() {
+  speakCustom('engine');
+}
+
+function speakCustom(type) {
+  const statusEl = document.getElementById('voice-status');
+  const speakBtn = document.getElementById('speak-btn');
+
+  if (!('speechSynthesis' in window)) {
+    statusEl.textContent = 'Not supported in this browser';
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const utt = new SpeechSynthesisUtterance(
+    alertMessages[type] || alertMessages.engine
+  );
+  utt.lang = 'en-IN';
+  utt.rate = 0.92;
+  utt.pitch = 1;
+
+  statusEl.textContent = '🔊 Speaking...';
+  if (speakBtn) speakBtn.style.borderColor = '#f97316';
+
+  utt.onend = () => {
+    statusEl.textContent = '✓ Alert announced';
+    if (speakBtn) speakBtn.style.borderColor = '#2a2a35';
+    setTimeout(() => {
+      statusEl.textContent = 'Click to announce latest alert';
+    }, 3000);
+  };
+
+  utt.onerror = () => {
+    statusEl.textContent = 'Speech error — try again';
+  };
+
+  window.speechSynthesis.speak(utt);
+}
+
+/* ─── INIT ───────────────────────────────────── */
+window.addEventListener('load', () => {
+  initChart('temp');
+  startLiveUpdates();
+});
+</script>
+</body>
+</html>

@@ -200,3 +200,59 @@ function saveVehicle() {
     renderHomeScreen();
   }, 500);
 }
+
+/* ── Modal add-vehicle helpers ── */
+function modalSelectVehicleType(type) {
+  newVehicle.type = type;
+  newVehicle.emoji = VEHICLE_TYPES.find(t => t.id === type)?.emoji || '🏍️';
+  document.querySelectorAll('#modal-vtype-grid .vtype-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.type === type);
+  });
+  const brandSel = document.getElementById('modal-v-brand');
+  if (brandSel) {
+    brandSel.innerHTML = `<option value="">${tr('Select brand', 'ब्रांड चुनें', 'ಬ್ರಾಂಡ್ ಆಯ್ಕೆಮಾಡಿ')}</option>` +
+      (VEHICLE_BRANDS[type] || []).map(b => `<option value="${b}">${b}</option>`).join('');
+  }
+  const modelSel = document.getElementById('modal-v-model');
+  if (modelSel) modelSel.innerHTML = `<option value="">${tr('Select brand first', 'पहले ब्रांड चुनें', 'ಮೊದಲು ಬ್ರಾಂಡ್ ಆಯ್ಕೆಮಾಡಿ')}</option>`;
+}
+
+function modalUpdateModels() {
+  const brand = document.getElementById('modal-v-brand')?.value;
+  const type = newVehicle.type || 'bike';
+  const models = VEHICLE_MODELS[type]?.[brand] || [];
+  const sel = document.getElementById('modal-v-model');
+  if (sel) {
+    sel.innerHTML = models.length
+      ? models.map(m => `<option value="${m}">${m}</option>`).join('')
+      : `<option value="">${tr('Other', 'अन्य', 'ಇತರೆ')}</option>`;
+  }
+}
+
+function saveVehicleFromModal() {
+  const nickname = document.getElementById('modal-v-nickname')?.value.trim();
+  if (!nickname) {
+    showToast(tr('Please enter a name for your vehicle', 'कृपया नाम दर्ज करें', 'ದಯವಿಟ್ಟು ಹೆಸರು ನಮೂದಿಸಿ'));
+    return;
+  }
+  const vehicle = {
+    id: 'v' + Date.now(),
+    type: newVehicle.type,
+    emoji: newVehicle.emoji,
+    nickname,
+    number: (document.getElementById('modal-v-number')?.value || '').trim(),
+    image: null,
+    brand: document.getElementById('modal-v-brand')?.value || 'Other',
+    model: document.getElementById('modal-v-model')?.value || 'Other',
+    year: parseInt(document.getElementById('modal-v-year')?.value) || 2024,
+    cc: parseInt(document.getElementById('modal-v-cc')?.value) || 110,
+    lastService: document.getElementById('modal-v-service-date')?.value || new Date().toISOString().split('T')[0],
+    odometer: parseInt(document.getElementById('modal-v-odometer')?.value) || 0,
+    lastDiagnosis: null,
+  };
+  State.vehicles.push(vehicle);
+  saveState();
+  document.getElementById('add-vehicle-modal')?.remove();
+  showToast(tr('Vehicle saved! ✅', 'गाड़ी सेव हो गई! ✅', 'ವಾಹನ ಉಳಿಸಲಾಗಿದೆ! ✅'));
+  renderHomeScreen();
+}

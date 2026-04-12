@@ -32,6 +32,10 @@ function shouldShowMainNav() {
 }
 
 function handleNavAction(tabId) {
+  // Stop ESP32 live timer when leaving the home screen
+  if (State.currentScreen === 'home' && tabId !== 'home') {
+    if (typeof esp32StopLive === 'function') esp32StopLive();
+  }
   switch (tabId) {
     case 'home':
       navigateTo('home', 'left');
@@ -110,19 +114,21 @@ window.syncBottomNav = syncBottomNav;
 
 function mountGlobalNav() {
   const bottom = document.getElementById('app-bottom-nav');
-  const top = document.getElementById('app-top-nav');
-  const delegate = (root) => {
+  const top    = document.getElementById('app-top-nav');
+
+  // Use a single permanent listener on the static containers.
+  // Works even after syncBottomNav rebuilds innerHTML.
+  [bottom, top].forEach(root => {
     if (!root || root.dataset.navBound) return;
     root.dataset.navBound = '1';
-    root.addEventListener('click', (e) => {
+    root.addEventListener('click', e => {
       const btn = e.target.closest('[data-nav-tab]');
       if (!btn) return;
       e.preventDefault();
+      e.stopPropagation();
       handleNavAction(btn.getAttribute('data-nav-tab'));
     });
-  };
-  delegate(bottom);
-  delegate(top);
+  });
 }
 
 function refreshCurrentScreen() {
@@ -217,6 +223,7 @@ document.addEventListener('keydown', (e) => {
     document.getElementById('screen-fleet')?.classList.remove('active');
     document.getElementById('api-key-modal')?.remove();
     document.getElementById('lang-modal')?.remove();
+    document.getElementById('add-vehicle-modal')?.remove();
     document.getElementById('ai-chat-panel')?.classList.remove('open');
     syncBottomNav();
   }

@@ -99,6 +99,11 @@ function renderHomeScreen() {
           </div>
         </div>
       </div>
+
+      <!-- ═══ ESP32 LIVE SENSOR SECTION ═══ -->
+      ${renderEsp32HomeSection()}
+
+      <div style="height: 20px;"></div>
     </div>
   `;
 
@@ -112,7 +117,210 @@ function renderHomeScreen() {
 
   bindSmartAlertFilters();
 
+  // Init ESP32 chart & live updates after DOM is painted
+  queueMicrotask(() => {
+    if (typeof esp32InitChart === 'function') {
+      esp32InitChart(typeof Esp32 !== 'undefined' ? Esp32.currentSensor : 'temp');
+      esp32StartLive();
+    }
+  });
+
   if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
+}
+
+/* ── ESP32 section HTML rendered inside Home screen ── */
+function renderEsp32HomeSection() {
+  return `
+    <section class="fleet-ai-section" style="margin-top: 12px;">
+
+      <!-- Section header -->
+      <div class="section-header" style="padding-top: 0; padding-bottom: 8px;">
+        <span class="section-label">📡 ESP32 Live Sensor Data</span>
+        <span class="badge badge-green" id="esp32-conn-badge">● Live</span>
+      </div>
+
+      <!-- Connection card -->
+      <div class="fleet-ai-card reveal-card" style="--delay:0.02s; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:0;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:1.2rem;">📡</span>
+          <div>
+            <div style="font-size:0.82rem; font-weight:700; color:var(--text-primary);">SmartVehicle_01</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:3px;">
+              <span id="esp32-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#22C55E; animation:voicePulse 2s infinite;"></span>
+              <span id="esp32-status-text" style="font-size:0.7rem; color:var(--text-secondary);">Connected via WiFi</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <button class="btn btn-sm btn-secondary" id="esp32-conn-btn" onclick="esp32ToggleConnect()">Disconnect</button>
+          <button class="btn btn-sm btn-secondary" onclick="esp32ToggleScan()">Scan Devices</button>
+        </div>
+      </div>
+
+      <!-- Scan dropdown -->
+      <div id="esp32-scan-drop" style="display:none;" class="fleet-ai-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border-subtle);">
+          <span style="font-size:0.8rem; color:var(--text-primary);">📡 SmartVehicle_01</span>
+          <span class="badge badge-green">In range</span>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border-subtle);">
+          <span style="font-size:0.8rem; color:var(--text-primary);">🔵 BikeDevice_02</span>
+          <span class="badge badge-blue">In range</span>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0;">
+          <span style="font-size:0.8rem; color:var(--text-primary);">⚪ AutoSensor_03</span>
+          <span class="badge" style="background:rgba(100,116,139,0.15); color:var(--text-muted); border:1px solid rgba(100,116,139,0.2);">Weak signal</span>
+        </div>
+      </div>
+
+      <!-- Metric mini-cards -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px;">
+
+        <div class="fleet-ai-card reveal-card" style="--delay:0.05s; padding:18px;">
+          <div class="fleet-ai-sub" style="margin-bottom:6px; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.5px;">🌡️ Engine Temp</div>
+          <div id="esp32-m-temp" style="font-size:1.7rem; font-weight:900; color:#EF4444; font-family:'Syne',sans-serif; line-height:1;">88.0°C</div>
+          <div class="fleet-ai-sub" id="esp32-s-temp" style="margin-top:4px;">Warning: High</div>
+          <div class="risk-track" style="margin-top:10px; height:6px;">
+            <div class="risk-fill is-warn" id="esp32-p-temp" style="width:47%;"></div>
+          </div>
+        </div>
+
+        <div class="fleet-ai-card reveal-card" style="--delay:0.09s; padding:18px;">
+          <div class="fleet-ai-sub" style="margin-bottom:6px; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.5px;">🔋 Battery</div>
+          <div id="esp32-m-bat" style="font-size:1.7rem; font-weight:900; color:#FF6B35; font-family:'Syne',sans-serif; line-height:1;">40%</div>
+          <div class="fleet-ai-sub" id="esp32-s-bat" style="margin-top:4px;">Low charge</div>
+          <div class="risk-track" style="margin-top:10px; height:6px;">
+            <div class="risk-fill is-warn" id="esp32-p-bat" style="width:40%;"></div>
+          </div>
+        </div>
+
+        <div class="fleet-ai-card reveal-card" style="--delay:0.13s; padding:18px;">
+          <div class="fleet-ai-sub" style="margin-bottom:6px; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.5px;">📳 Vibration</div>
+          <div id="esp32-m-vib" style="font-size:1.7rem; font-weight:900; color:#22C55E; font-family:'Syne',sans-serif; line-height:1;">0.30g</div>
+          <div class="fleet-ai-sub" id="esp32-s-vib" style="margin-top:4px;">Normal</div>
+          <div class="risk-track" style="margin-top:10px; height:6px;">
+            <div class="risk-fill is-ok" id="esp32-p-vib" style="width:15%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-time chart -->
+      <div class="fleet-ai-card reveal-card" style="--delay:0.17s;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+          <div>
+            <div class="fleet-ai-title">📈 Real-Time Chart</div>
+            <div class="fleet-ai-sub">Updates every 2s</div>
+          </div>
+          <div style="display:flex; gap:5px; flex-wrap:wrap;" id="esp32-tabs">
+            <button class="alert-filter active" data-sensor="temp" onclick="esp32SwitchTab('temp', this)">Temp</button>
+            <button class="alert-filter" data-sensor="battery" onclick="esp32SwitchTab('battery', this)">Battery</button>
+            <button class="alert-filter" data-sensor="vibration" onclick="esp32SwitchTab('vibration', this)">Vibration</button>
+          </div>
+        </div>
+        <div style="display:flex; gap:14px; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:5px; font-size:0.68rem; color:var(--text-secondary);">
+            <span id="esp32-legend-dot" style="display:inline-block; width:9px; height:9px; border-radius:2px; background:#EF4444;"></span> Actual
+          </div>
+          <div style="display:flex; align-items:center; gap:5px; font-size:0.68rem; color:var(--text-secondary);">
+            <span style="display:inline-block; width:16px; height:2px; background:repeating-linear-gradient(90deg,#FF6B35 0,#FF6B35 4px,transparent 4px,transparent 8px);"></span> Predicted
+          </div>
+        </div>
+        <div style="position:relative; height:240px;">
+          <canvas id="esp32-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- Breakdown warning -->
+      <div class="fleet-ai-card reveal-card" style="--delay:0.21s; background:linear-gradient(135deg,rgba(239,68,68,0.12),rgba(17,24,39,0.7)); border-color:rgba(239,68,68,0.3);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <span style="font-size:0.74rem; color:#F87171; font-weight:700;">⚠ Warning Detected</span>
+          <span class="badge badge-red">WARNING</span>
+        </div>
+        <div class="fleet-ai-title" style="margin-bottom:4px;">Engine Overheating</div>
+        <div class="fleet-ai-sub" style="margin-bottom:3px;"><strong style="color:var(--text-primary);">Reason:</strong> Heavy traffic + low coolant detected</div>
+        <div class="fleet-ai-sub" style="margin-bottom:10px;"><strong style="color:var(--text-primary);">Fix:</strong> Stop vehicle · Cool engine · Check coolant</div>
+        <button class="btn btn-danger btn-sm btn-full" onclick="esp32ToggleFixGuide(this)">Get Fix Guide →</button>
+        <div id="esp32-fix-guide" style="display:none; margin-top:8px; border-top:1px solid rgba(239,68,68,0.2); padding-top:8px;">
+          <div class="fleet-ai-list">
+            <div class="alert-item">1. 🚗 Pull over safely and switch off engine</div>
+            <div class="alert-item">2. ⏳ Wait 15–20 min for engine to cool</div>
+            <div class="alert-item">3. 🧴 Check coolant reservoir — top up if low</div>
+            <div class="alert-item">4. 🔍 Inspect hoses/radiator for leaks</div>
+            <div class="alert-item">5. 🏪 Visit service center if issue persists</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Smart Alerts -->
+      <div class="fleet-ai-card reveal-card" style="--delay:0.25s;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+          <div class="fleet-ai-title">🚨 Smart Alerts</div>
+          <div style="display:flex; gap:5px;" id="esp32-alert-filters">
+            <button class="alert-filter active" data-filter="all" onclick="esp32FilterAlerts('all', this)">All</button>
+            <button class="alert-filter" data-filter="critical" onclick="esp32FilterAlerts('critical', this)">Critical</button>
+            <button class="alert-filter" data-filter="warning" onclick="esp32FilterAlerts('warning', this)">Warning</button>
+          </div>
+        </div>
+        <div class="alert-list" id="esp32-alert-list">
+          <div class="alert-item" data-alert-type="critical" style="gap:8px; padding:6px 0; border-bottom:1px solid var(--border-subtle);">🔴 <div style="flex:1;"><div style="font-size:0.76rem; font-weight:600; color:var(--text-primary);">Engine overheating</div><div class="fleet-ai-sub">Temp reached 92°C · Reduce load</div></div><div style="font-size:0.66rem; color:var(--text-muted); white-space:nowrap;">Now</div></div>
+          <div class="alert-item" data-alert-type="warning" style="gap:8px; padding:6px 0; border-bottom:1px solid var(--border-subtle);">🟠 <div style="flex:1;"><div style="font-size:0.76rem; font-weight:600; color:var(--text-primary);">Battery critically low</div><div class="fleet-ai-sub">Below 40% · Recharge soon</div></div><div style="font-size:0.66rem; color:var(--text-muted); white-space:nowrap;">2m ago</div></div>
+          <div class="alert-item" data-alert-type="warning" style="gap:8px; padding:6px 0;">🟡 <div style="flex:1;"><div style="font-size:0.76rem; font-weight:600; color:var(--text-primary);">Tire pressure low</div><div class="fleet-ai-sub">Front tire: 26 PSI</div></div><div style="font-size:0.66rem; color:var(--text-muted); white-space:nowrap;">8m ago</div></div>
+        </div>
+      </div>
+
+      <!-- All Sensors + Voice row -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:8px;">
+
+        <div class="fleet-ai-card reveal-card" style="--delay:0.29s;">
+          <div class="fleet-ai-title" style="margin-bottom:8px;">🔬 All Sensors</div>
+          <div style="display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border-subtle);">
+            <span style="font-size:0.9rem;">🌡️</span>
+            <div style="flex:1;"><div style="font-size:0.74rem; font-weight:600;">Engine Temp</div><div class="fleet-ai-sub" id="esp32-sv-temp">88.0°C · Normal &lt;95°C</div></div>
+            <span class="badge badge-amber" style="font-size:0.6rem;">High</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border-subtle);">
+            <span style="font-size:0.9rem;">🔋</span>
+            <div style="flex:1;"><div style="font-size:0.74rem; font-weight:600;">Battery</div><div class="fleet-ai-sub" id="esp32-sv-bat">40% · 12.1V</div></div>
+            <span class="badge badge-red" style="font-size:0.6rem;">Low</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border-subtle);">
+            <span style="font-size:0.9rem;">🛞</span>
+            <div style="flex:1;"><div style="font-size:0.74rem; font-weight:600;">Tire Pressure</div><div class="fleet-ai-sub">F: 26 PSI · R: 30 PSI</div></div>
+            <span class="badge badge-amber" style="font-size:0.6rem;">Check</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; padding:5px 0;">
+            <span style="font-size:0.9rem;">📳</span>
+            <div style="flex:1;"><div style="font-size:0.74rem; font-weight:600;">Vibration</div><div class="fleet-ai-sub" id="esp32-sv-vib">0.30g · Smooth</div></div>
+            <span class="badge badge-green" style="font-size:0.6rem;">Normal</span>
+          </div>
+        </div>
+
+        <div class="fleet-ai-card reveal-card" style="--delay:0.33s;">
+          <div class="fleet-ai-title" style="margin-bottom:8px;">🔊 Voice Alert</div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+            <button class="btn btn-sm btn-secondary" onclick="esp32Speak('engine')">🔊 Speak</button>
+            <span id="esp32-voice-status" class="fleet-ai-sub">Click to announce</span>
+          </div>
+          <div style="display:flex; gap:5px; flex-wrap:wrap;">
+            <button class="btn btn-sm btn-ghost" style="font-size:0.68rem; padding:4px 8px;" onclick="esp32Speak('engine')">Engine</button>
+            <button class="btn btn-sm btn-ghost" style="font-size:0.68rem; padding:4px 8px;" onclick="esp32Speak('battery')">Battery</button>
+            <button class="btn btn-sm btn-ghost" style="font-size:0.68rem; padding:4px 8px;" onclick="esp32Speak('tire')">Tire</button>
+          </div>
+          <div class="fleet-ai-title" style="margin-top:12px; margin-bottom:6px;">🔗 Connection</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+            <span class="fleet-ai-sub">📶 WiFi</span>
+            <span class="badge badge-green" id="esp32-wifi-badge">Active</span>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span class="fleet-ai-sub">🔵 Bluetooth</span>
+            <span class="badge" style="background:rgba(100,116,139,0.15); color:var(--text-muted); border:1px solid rgba(100,116,139,0.2); font-size:0.6rem;">Idle</span>
+          </div>
+          <div class="fleet-ai-sub" style="margin-top:8px; font-family:monospace; font-size:0.62rem; opacity:0.7;">ESP32 → WiFi → Firebase → Dashboard</div>
+        </div>
+      </div>
+
+    </section>
+  `;
 }
 
 function renderFleetIntelligenceSection(temp) {
@@ -512,8 +720,89 @@ function navigateToProfile() {
 }
 
 function navigateToAddVehicle() {
-  navigateTo('add-vehicle', 'right');
-  renderAddVehicleScreen();
+  // Open as modal so user sees form immediately without scrolling
+  if (document.getElementById('add-vehicle-modal')) return; // already open
+
+  newVehicle = { type: 'bike', emoji: '🏍️', imageDataUrl: null };
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'add-vehicle-modal';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:440px; max-height:88vh; overflow-y:auto; padding:20px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <h3 class="modal-title" style="margin:0;">➕ ${t('addVehicle')}</h3>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('add-vehicle-modal').remove()" style="padding:4px 10px;">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label class="label">${tr('Vehicle Type','गाड़ी का प्रकार','ವಾಹನದ ಪ್ರಕಾರ')}</label>
+        <div class="vehicle-type-grid" id="modal-vtype-grid">
+          ${VEHICLE_TYPES.map(vt => `
+            <div class="vtype-btn ${vt.id === 'bike' ? 'selected' : ''}" data-type="${vt.id}" onclick="modalSelectVehicleType('${vt.id}')">
+              <span class="vtype-emoji">${vt.emoji}</span>
+              <span class="vtype-name">${vt.label}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="label">${tr('Nickname / Name','गाड़ी का नाम','ಹೆಸರು')}</label>
+        <input type="text" class="input-field" id="modal-v-nickname" placeholder="${tr('e.g. My Splendor','जैसे: मेरी बाइक','ಉದಾ. ನನ್ನ ಬೈಕ್')}" maxlength="30" />
+      </div>
+
+      <div class="form-group">
+        <label class="label">${t('vehicleReg')}</label>
+        <input type="text" class="input-field" id="modal-v-number" placeholder="${tr('e.g. KA-01-AB-1234','उदा. DL-01-AB-1234','ಉದಾ. KA-01-AB-1234')}" maxlength="20" />
+      </div>
+
+      <div class="form-group">
+        <label class="label">${tr('Brand','ब्रांड','ಬ್ರಾಂಡ್')}</label>
+        <select class="input-field" id="modal-v-brand" onchange="modalUpdateModels()">
+          <option value="">${tr('Select brand','ब्रांड चुनें','ಬ್ರಾಂಡ್ ಆಯ್ಕೆಮಾಡಿ')}</option>
+          ${(VEHICLE_BRANDS.bike || []).map(b => `<option value="${b}">${b}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="label">${tr('Model','मॉडल','ಮಾಡೆಲ್')}</label>
+        <select class="input-field" id="modal-v-model">
+          <option value="">${tr('Select brand first','पहले ब्रांड चुनें','ಮೊದಲು ಬ್ರಾಂಡ್ ಆಯ್ಕೆಮಾಡಿ')}</option>
+        </select>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label class="label">${tr('Year','साल','ವರ್ಷ')}</label>
+          <select class="input-field" id="modal-v-year">
+            ${Array.from({length:15},(_,i)=>2026-i).map(y=>`<option value="${y}">${y}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="label">Engine CC</label>
+          <input type="number" class="input-field" id="modal-v-cc" placeholder="110" min="50" max="2000" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="label">${tr('Last service date','अंतिम सर्विस','ಕೊನೆಯ ಸರ್ವಿಸ್')}</label>
+        <input type="date" class="input-field" id="modal-v-service-date" value="${new Date().toISOString().split('T')[0]}" />
+      </div>
+
+      <div class="form-group">
+        <label class="label">${tr('Odometer (km)','ओडोमीटर (km)','ಓಡೋಮೀಟರ್')}</label>
+        <input type="number" class="input-field" id="modal-v-odometer" placeholder="15000" min="0" />
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button class="btn btn-ghost btn-full" onclick="document.getElementById('add-vehicle-modal').remove()">${t('cancel')}</button>
+        <button class="btn btn-primary btn-full" onclick="saveVehicleFromModal()">💾 ${tr('Save','सेव करें','ಉಳಿಸಿ')}</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
 }
 
 function startDiagnose(vehicleId) {
