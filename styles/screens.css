@@ -362,7 +362,9 @@
   background: linear-gradient(135deg, rgba(255,107,53,0.08), rgba(17,24,39,0.7));
   border: 1px solid rgba(255,107,53,0.22);
   border-radius: var(--radius-md);
-  padding: 12px;
+  padding: 14px;
+  /* equal height in grid rows */
+  align-self: stretch;
 }
 
 .reveal-card {
@@ -754,15 +756,13 @@
 
 /* Diagnose CTA */
 .diagnose-cta-wrapper {
-  position: fixed;
+  position: sticky;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
   width: 100%;
-  max-width: 430px;
   padding: 16px 20px;
   background: linear-gradient(to top, var(--bg-primary) 80%, transparent);
   z-index: 50;
+  flex-shrink: 0;
 }
 
 /* ──────────────────────────────────────────

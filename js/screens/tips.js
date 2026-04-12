@@ -13,7 +13,7 @@ function renderTipsScreen() {
 
   el.innerHTML = `
     <div class="page-header">
-      <div class="back-btn" onclick="goBack(); renderHomeScreen();">${Icons.back}</div>
+      <div class="back-btn" onclick="goBack(); refreshCurrentScreen();">${Icons.back}</div>
       <h2 class="page-title">${isHi ? 'सुझाव और जानें' : 'Tips & Learn'}</h2>
     </div>
 

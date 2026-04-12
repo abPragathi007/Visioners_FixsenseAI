@@ -90,6 +90,12 @@ function renderResultsScreen() {
         : (result.issues || []).map(issue => renderIssueCard(issue, isHi)).join('')
       }
 
+      <!-- Module 10: Cost Estimator -->
+      ${result.issues?.length ? `<div id="rr-cost-estimator">${typeof renderCostEstimator === 'function' ? renderCostEstimator(result.issues) : ''}</div>` : ''}
+
+      <!-- Module 5: Service Recommendations link -->
+      ${result.issues?.length ? `<button class="btn btn-secondary btn-full" style="margin-top:10px;" onclick="navigateTo('history','right');renderHistoryScreen();">🔧 View Service Recommendations</button>` : ''}
+
       <!-- Smoke Color Guide -->
       <div class="smoke-guide">
         <div class="smoke-guide-title">🔍 ${isHi ? 'धुएं का रंग गाइड' : 'Smoke Color Guide'}</div>

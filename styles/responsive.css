@@ -35,6 +35,14 @@ body.nav-main-visible #app {
   padding-bottom: 12px;
 }
 
+@media (min-width: 768px) {
+  .screen-scroll {
+    overflow-y: visible;
+    overflow-x: visible;
+    min-height: unset;
+  }
+}
+
 .screen-diag-wrap {
   display: flex;
   flex-direction: column;
@@ -73,6 +81,39 @@ body.nav-main-visible #app {
   font-weight: 800;
   font-size: 0.95rem;
   white-space: nowrap;
+}
+
+/* Quick-control buttons (theme + lang) sit between brand and tabs */
+.topnav-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 4px;
+}
+
+.topnav-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-card);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.topnav-icon-btn:hover {
+  border-color: var(--brand-orange);
+  color: var(--brand-orange);
+  background: rgba(255, 107, 53, 0.08);
 }
 
 .topnav-tabs {
@@ -158,6 +199,11 @@ body.nav-main-visible #app {
 
   .fleet-ai-section .section-header {
     grid-column: 1 / -1;
+  }
+
+  /* Equal height cards in same row */
+  .fleet-ai-section .fleet-ai-card {
+    height: 100%;
   }
 }
 
@@ -387,9 +433,10 @@ body.nav-main-visible #app {
   accent-color: var(--brand-orange);
 }
 
-#screen-tips,
-#screen-history,
-#screen-profile {
+/* These screens use flex layout when active — do NOT set display unconditionally */
+#screen-tips.active,
+#screen-history.active,
+#screen-profile.active {
   display: flex;
   flex-direction: column;
 }

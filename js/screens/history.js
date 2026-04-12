@@ -61,7 +61,7 @@ function renderHistoryScreen() {
 
   el.innerHTML = `
     <div class="page-header">
-      <div class="back-btn" onclick="goBack(); renderHomeScreen();">${Icons.back}</div>
+      <div class="back-btn" onclick="goBack(); refreshCurrentScreen();">${Icons.back}</div>
       <h2 class="page-title">${isHi ? 'जांच का इतिहास' : 'Diagnosis History'}</h2>
       <button class="btn btn-ghost btn-sm" onclick="exportHistoryFiltered()">📤 Export</button>
     </div>
@@ -93,13 +93,23 @@ function renderHistoryScreen() {
       <!-- Trend Chart -->
       ${renderTrendChart(filtered.slice(0, 7))}
 
+      <!-- Trip History + PDF Download -->
+      <div class="section-title" style="margin-top:8px;">Trip Logs</div>
+      <div id="rr-trip-history-hist" style="margin-bottom:12px;"></div>
+      <button class="btn btn-secondary btn-sm btn-full" style="margin-bottom:16px;" onclick="renderTripHistory();document.getElementById('rr-trip-history-hist').innerHTML=document.getElementById('rr-trip-history')?.innerHTML||''">📊 Load Trip Logs</button>
+
       <!-- History Items -->
       <div class="section-title">${isHi ? 'पिछली जांचें' : 'Past Diagnoses'} (${filtered.length})</div>
 
       ${filtered.length === 0
-        ? `<div class="card" style="text-align: center; padding: 32px;">
-            <div style="font-size: 3rem; margin-bottom: 12px;">📭</div>
-            <p class="text-secondary">${isHi ? 'इन फ़िल्टर के लिए कोई रिकॉर्ड नहीं।' : 'No records match these filters.'}</p>
+        ? `<div class="card" style="text-align: center; padding: 40px 20px;">
+            <div style="font-size: 3.5rem; margin-bottom: 12px;">📭</div>
+            <div style="font-size: 1rem; font-weight: 700; margin-bottom: 6px;">${isHi ? 'कोई रिकॉर्ड नहीं' : 'No records yet'}</div>
+            <p class="text-secondary" style="font-size:0.85rem;">${history.length === 0
+              ? (isHi ? 'अभी तक कोई जांच नहीं हुई। पहली जांच करें!' : 'No diagnoses yet. Run your first check!')
+              : (isHi ? 'इन फ़िल्टर के लिए कोई रिकॉर्ड नहीं।' : 'No records match these filters.')
+            }</p>
+            ${history.length === 0 ? `<button class="btn btn-primary" style="margin-top:16px;" onclick="startDiagnose(null)">🔍 ${isHi ? 'जांचें' : 'Diagnose Now'}</button>` : ''}
            </div>`
         : filtered.map(entry => renderHistoryItem(entry, isHi)).join('')
       }

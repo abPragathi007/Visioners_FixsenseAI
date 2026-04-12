@@ -94,7 +94,7 @@ body {
   margin: 0 auto;
   position: relative;
   background: var(--bg-primary);
-  overflow: hidden;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -125,6 +125,15 @@ body {
   max-width: 430px;
   z-index: 200;
   background: var(--bg-primary);
+}
+
+/* On desktop, screens should not be viewport-height locked */
+@media (min-width: 768px) {
+  .screen {
+    min-height: unset;
+    height: auto;
+    overflow: visible;
+  }
 }
 
 /* ── Scrollbar ── */

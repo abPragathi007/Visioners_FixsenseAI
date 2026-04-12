@@ -95,7 +95,15 @@ function syncBottomNav() {
   if (top) {
     top.style.display = show ? 'flex' : 'none';
     top.innerHTML = `
-      <div class="topnav-brand">🏍️ ${t('appName')}</div>
+      <div class="topnav-brand">🛡️ RideRaksha</div>
+      <div class="topnav-controls">
+        <button type="button" class="topnav-icon-btn" onclick="topnavToggleTheme()" title="${State.darkMode ? 'Switch to Light' : 'Switch to Dark'}">
+          ${State.darkMode ? '☀️' : '🌙'}
+        </button>
+        <button type="button" class="topnav-icon-btn topnav-lang-btn" onclick="topnavCycleLang()" title="Change language">
+          ${State.language === 'en' ? '🇬🇧 EN' : State.language === 'hi' ? '🇮🇳 HI' : '🇮🇳 KN'}
+        </button>
+      </div>
       <div class="topnav-tabs">
         ${['home', 'diagnose', 'history', 'tips', 'profile'].map(id => `
           <button type="button" class="topnav-tab ${id === activeTab ? 'active' : ''}" data-nav-tab="${id}">
@@ -111,6 +119,30 @@ function syncBottomNav() {
 }
 
 window.syncBottomNav = syncBottomNav;
+
+/* ── Top-nav quick controls ── */
+function topnavToggleTheme() {
+  State.darkMode = !State.darkMode;
+  applyThemeToDocument();
+  saveState();
+  syncBottomNav();          // re-render icon
+  refreshCurrentScreen();   // re-render active screen (profile toggle stays in sync)
+}
+
+function topnavCycleLang() {
+  const order = ['en', 'hi', 'kn'];
+  const next = order[(order.indexOf(State.language) + 1) % order.length];
+  State.language = next;
+  saveState();
+  applyDocumentLocale();
+  syncBottomNav();
+  refreshCurrentScreen();
+  showToast(t('languageUpdated'));
+}
+
+function topnavShowLangMenu() {
+  showLanguageModal();
+}
 
 function mountGlobalNav() {
   const bottom = document.getElementById('app-bottom-nav');

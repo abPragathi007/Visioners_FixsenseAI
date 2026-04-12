@@ -335,6 +335,13 @@ async function submitDiagnosis() {
   const textarea = document.getElementById('symptom-text');
   if (textarea) State.diagnoseInputs.symptoms = textarea.value;
 
+  // Show loading state on button
+  const btn = document.querySelector('.diagnose-cta-wrapper .btn-primary');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span style="display:inline-flex;gap:6px;align-items:center;"><span class="loading-dots"><span></span><span></span><span></span></span> Analyzing...</span>';
+  }
+
   // Navigate to loading
   navigateTo('loading', 'right');
   renderLoadingScreen();

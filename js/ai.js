@@ -310,6 +310,9 @@ async function runDiagnosis() {
 
   State.results = result;
 
+  // Save service recommendations
+  if (typeof serviceRecsFromDiagnosis === 'function') serviceRecsFromDiagnosis(result);
+
   // Save to history
   const historyEntry = {
     id: 'h' + Date.now(),

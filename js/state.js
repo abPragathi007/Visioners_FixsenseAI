@@ -187,7 +187,7 @@ function showToast(message, duration = 3000) {
 // ── i18n ──
 const I18N = {
   en: {
-    appName: 'Bike Health AI',
+    appName: 'RideRaksha',
     navHome: 'Home',
     navDiagnose: 'Diagnose',
     navHistory: 'History',
@@ -249,7 +249,7 @@ const I18N = {
     languageUpdated: 'Language updated!',
   },
   hi: {
-    appName: 'बाइक हेल्थ AI',
+    appName: 'RideRaksha',
     navHome: 'होम',
     navDiagnose: 'जांचें',
     navHistory: 'इतिहास',
@@ -311,7 +311,7 @@ const I18N = {
     languageUpdated: 'भाषा अपडेट हो गई!',
   },
   kn: {
-    appName: 'ಬೈಕ್ ಹೆಲ್ತ್ AI',
+    appName: 'RideRaksha',
     navHome: 'ಮುಖಪುಟ',
     navDiagnose: 'ಪರಿಶೀಲನೆ',
     navHistory: 'ಇತಿಹಾಸ',

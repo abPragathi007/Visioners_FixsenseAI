@@ -3,9 +3,12 @@
   "private": true,
   "description": "Static Bike Health AI app — run `npm start` then open http://localhost:3000",
   "scripts": {
-    "start": "serve . -l 3000"
+    "start": "serve . -l 3000",
+    "test": "vitest --run"
   },
   "devDependencies": {
-    "serve": "^14.2.4"
+    "jsdom": "^29.0.2",
+    "serve": "^14.2.4",
+    "vitest": "^4.1.4"
   }
 }

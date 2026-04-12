@@ -174,38 +174,38 @@ function renderEsp32HomeSection() {
       </div>
 
       <!-- Metric mini-cards -->
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
 
-        <div class="fleet-ai-card reveal-card" style="--delay:0.05s; padding:18px;">
-          <div class="fleet-ai-sub" style="margin-bottom:6px; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.5px;">🌡️ Engine Temp</div>
-          <div id="esp32-m-temp" style="font-size:1.7rem; font-weight:900; color:#EF4444; font-family:'Syne',sans-serif; line-height:1;">88.0°C</div>
-          <div class="fleet-ai-sub" id="esp32-s-temp" style="margin-top:4px;">Warning: High</div>
-          <div class="risk-track" style="margin-top:10px; height:6px;">
+        <div class="fleet-ai-card reveal-card" style="--delay:0.05s; padding:20px;">
+          <div class="fleet-ai-sub" style="margin-bottom:8px; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px;">🌡️ Engine Temp</div>
+          <div id="esp32-m-temp" style="font-size:2rem; font-weight:900; color:#EF4444; font-family:'Syne',sans-serif; line-height:1;">88.0°C</div>
+          <div class="fleet-ai-sub" id="esp32-s-temp" style="margin-top:6px;">Warning: High</div>
+          <div class="risk-track" style="margin-top:12px; height:8px;">
             <div class="risk-fill is-warn" id="esp32-p-temp" style="width:47%;"></div>
           </div>
         </div>
 
-        <div class="fleet-ai-card reveal-card" style="--delay:0.09s; padding:18px;">
-          <div class="fleet-ai-sub" style="margin-bottom:6px; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.5px;">🔋 Battery</div>
-          <div id="esp32-m-bat" style="font-size:1.7rem; font-weight:900; color:#FF6B35; font-family:'Syne',sans-serif; line-height:1;">40%</div>
-          <div class="fleet-ai-sub" id="esp32-s-bat" style="margin-top:4px;">Low charge</div>
-          <div class="risk-track" style="margin-top:10px; height:6px;">
+        <div class="fleet-ai-card reveal-card" style="--delay:0.09s; padding:20px;">
+          <div class="fleet-ai-sub" style="margin-bottom:8px; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px;">🔋 Battery</div>
+          <div id="esp32-m-bat" style="font-size:2rem; font-weight:900; color:#FF6B35; font-family:'Syne',sans-serif; line-height:1;">40%</div>
+          <div class="fleet-ai-sub" id="esp32-s-bat" style="margin-top:6px;">Low charge</div>
+          <div class="risk-track" style="margin-top:12px; height:8px;">
             <div class="risk-fill is-warn" id="esp32-p-bat" style="width:40%;"></div>
           </div>
         </div>
 
-        <div class="fleet-ai-card reveal-card" style="--delay:0.13s; padding:18px;">
-          <div class="fleet-ai-sub" style="margin-bottom:6px; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.5px;">📳 Vibration</div>
-          <div id="esp32-m-vib" style="font-size:1.7rem; font-weight:900; color:#22C55E; font-family:'Syne',sans-serif; line-height:1;">0.30g</div>
-          <div class="fleet-ai-sub" id="esp32-s-vib" style="margin-top:4px;">Normal</div>
-          <div class="risk-track" style="margin-top:10px; height:6px;">
+        <div class="fleet-ai-card reveal-card" style="--delay:0.13s; padding:20px;">
+          <div class="fleet-ai-sub" style="margin-bottom:8px; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px;">📳 Vibration</div>
+          <div id="esp32-m-vib" style="font-size:2rem; font-weight:900; color:#22C55E; font-family:'Syne',sans-serif; line-height:1;">0.30g</div>
+          <div class="fleet-ai-sub" id="esp32-s-vib" style="margin-top:6px;">Normal</div>
+          <div class="risk-track" style="margin-top:12px; height:8px;">
             <div class="risk-fill is-ok" id="esp32-p-vib" style="width:15%;"></div>
           </div>
         </div>
       </div>
 
       <!-- Real-time chart -->
-      <div class="fleet-ai-card reveal-card" style="--delay:0.17s;">
+      <div class="fleet-ai-card reveal-card" style="--delay:0.17s; padding:16px;">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
           <div>
             <div class="fleet-ai-title">📈 Real-Time Chart</div>
@@ -225,7 +225,7 @@ function renderEsp32HomeSection() {
             <span style="display:inline-block; width:16px; height:2px; background:repeating-linear-gradient(90deg,#FF6B35 0,#FF6B35 4px,transparent 4px,transparent 8px);"></span> Predicted
           </div>
         </div>
-        <div style="position:relative; height:240px;">
+        <div style="position:relative; height:280px;">
           <canvas id="esp32-chart"></canvas>
         </div>
       </div>
@@ -720,23 +720,52 @@ function navigateToProfile() {
 }
 
 function navigateToAddVehicle() {
-  // Open as modal so user sees form immediately without scrolling
-  if (document.getElementById('add-vehicle-modal')) return; // already open
+  if (document.getElementById('add-vehicle-modal')) return;
+  newVehicle = { type: 'bike', emoji: '🏍️', imageDataUrl: null, location: null };
 
-  newVehicle = { type: 'bike', emoji: '🏍️', imageDataUrl: null };
+  const L = {
+    title:        tr('Add Vehicle', 'गाड़ी जोड़ें', 'ವಾಹನ ಸೇರಿಸಿ'),
+    vtype:        tr('Vehicle Type', 'गाड़ी का प्रकार', 'ವಾಹನದ ಪ್ರಕಾರ'),
+    photo:        tr('Vehicle Photo', 'गाड़ी की फोटो', 'ವಾಹನ ಚಿತ್ರ'),
+    fromGallery:  tr('Gallery', 'गैलरी', 'ಗ್ಯಾಲರಿ'),
+    fromCamera:   tr('Camera', 'कैमरा', 'ಕ್ಯಾಮೆರಾ'),
+    removePhoto:  tr('Remove', 'हटाएं', 'ತೆಗೆದುಹಾಕಿ'),
+    nickname:     tr('Nickname / Name', 'गाड़ी का नाम', 'ಹೆಸರು'),
+    nickPh:       tr('e.g. My Splendor', 'जैसे: मेरी बाइक', 'ಉದಾ. ನನ್ನ ಬೈಕ್'),
+    reg:          t('vehicleReg'),
+    regPh:        tr('e.g. KA-01-AB-1234', 'उदा. DL-01-AB-1234', 'ಉದಾ. KA-01-AB-1234'),
+    brand:        tr('Brand', 'ब्रांड', 'ಬ್ರಾಂಡ್'),
+    selBrand:     tr('Select brand', 'ब्रांड चुनें', 'ಬ್ರಾಂಡ್ ಆಯ್ಕೆಮಾಡಿ'),
+    model:        tr('Model', 'मॉडल', 'ಮಾದರಿ'),
+    selBrandFirst:tr('Select brand first', 'पहले ब्रांड चुनें', 'ಮೊದಲು ಬ್ರಾಂಡ್ ಆಯ್ಕೆಮಾಡಿ'),
+    year:         tr('Year', 'साल', 'ವರ್ಷ'),
+    cc:           tr('Engine CC', 'इंजन CC', 'ಎಂಜಿನ್ CC'),
+    service:      tr('Last service date', 'अंतिम सर्विस', 'ಕೊನೆಯ ಸರ್ವಿಸ್'),
+    odo:          tr('Odometer (km)', 'ओडोमीटर (km)', 'ಓಡೋಮೀಟರ್ (km)'),
+    location:     tr('Garage / Home Location', 'गैराज / घर का पता', 'ಗ್ಯಾರೇಜ್ / ಮನೆ ಸ್ಥಳ'),
+    locPh:        tr('Enter area or city', 'क्षेत्र या शहर दर्ज करें', 'ಪ್ರದೇಶ ಅಥವಾ ನಗರ ನಮೂದಿಸಿ'),
+    detectLoc:    tr('Detect my location', 'मेरी लोकेशन पता करें', 'ನನ್ನ ಸ್ಥಳ ಪತ್ತೆ ಮಾಡಿ'),
+    nearbyMech:   tr('Nearby Mechanics', 'नजदीकी मैकेनिक', 'ಹತ್ತಿರದ ಮೆಕ್ಯಾನಿಕ್'),
+    findMech:     tr('Find Mechanics Near Me', 'मेरे पास मैकेनिक खोजें', 'ನನ್ನ ಹತ್ತಿರ ಮೆಕ್ಯಾನಿಕ್ ಹುಡುಕಿ'),
+    cancel:       t('cancel'),
+    save:         tr('Save', 'सेव करें', 'ಉಳಿಸಿ'),
+  };
 
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = 'add-vehicle-modal';
   modal.innerHTML = `
-    <div class="modal-box" style="max-width:440px; max-height:88vh; overflow-y:auto; padding:20px;">
+    <div class="modal-box" style="max-width:460px; max-height:92vh; overflow-y:auto; padding:20px;">
+
+      <!-- Header -->
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
-        <h3 class="modal-title" style="margin:0;">➕ ${t('addVehicle')}</h3>
+        <h3 class="modal-title" style="margin:0;">➕ ${L.title}</h3>
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('add-vehicle-modal').remove()" style="padding:4px 10px;">✕</button>
       </div>
 
+      <!-- Vehicle Type -->
       <div class="form-group">
-        <label class="label">${tr('Vehicle Type','गाड़ी का प्रकार','ವಾಹನದ ಪ್ರಕಾರ')}</label>
+        <label class="label">${L.vtype}</label>
         <div class="vehicle-type-grid" id="modal-vtype-grid">
           ${VEHICLE_TYPES.map(vt => `
             <div class="vtype-btn ${vt.id === 'bike' ? 'selected' : ''}" data-type="${vt.id}" onclick="modalSelectVehicleType('${vt.id}')">
@@ -747,62 +776,252 @@ function navigateToAddVehicle() {
         </div>
       </div>
 
+      <!-- ── PHOTO SECTION ── -->
       <div class="form-group">
-        <label class="label">${tr('Nickname / Name','गाड़ी का नाम','ಹೆಸರು')}</label>
-        <input type="text" class="input-field" id="modal-v-nickname" placeholder="${tr('e.g. My Splendor','जैसे: मेरी बाइक','ಉದಾ. ನನ್ನ ಬೈಕ್')}" maxlength="30" />
+        <label class="label">${L.photo}</label>
+
+        <!-- Preview (hidden until photo chosen) -->
+        <div id="modal-photo-preview" style="display:none; position:relative; margin-bottom:10px;">
+          <img id="modal-photo-img" alt=""
+            style="width:100%; max-height:160px; object-fit:cover; border-radius:var(--radius-md); border:1px solid var(--border-card);" />
+          <button type="button" onclick="modalClearPhoto()"
+            style="position:absolute; top:6px; right:6px; background:rgba(0,0,0,0.6); border:none; color:#fff;
+                   border-radius:50%; width:28px; height:28px; font-size:0.8rem; cursor:pointer; display:flex;
+                   align-items:center; justify-content:center;">✕</button>
+        </div>
+
+        <!-- Two buttons: Gallery + Camera -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;" id="modal-photo-btns">
+          <label class="btn btn-secondary" style="cursor:pointer; justify-content:center; gap:6px;">
+            🖼️ ${L.fromGallery}
+            <input type="file" accept="image/*" style="display:none;"
+              onchange="modalOnPhotoSelected(event, false)" />
+          </label>
+          <label class="btn btn-secondary" style="cursor:pointer; justify-content:center; gap:6px;">
+            📷 ${L.fromCamera}
+            <input type="file" accept="image/*" capture="environment" style="display:none;"
+              onchange="modalOnPhotoSelected(event, true)" />
+          </label>
+        </div>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:6px;">
+          ${tr('JPG/PNG · max 2MB · shown on dashboard', 'JPG/PNG · अधिकतम 2MB · डैशबोर्ड पर दिखेगी', 'JPG/PNG · ಗರಿಷ್ಠ 2MB · ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಲ್ಲಿ ಕಾಣಿಸುತ್ತದೆ')}
+        </div>
       </div>
 
+      <!-- Nickname -->
       <div class="form-group">
-        <label class="label">${t('vehicleReg')}</label>
-        <input type="text" class="input-field" id="modal-v-number" placeholder="${tr('e.g. KA-01-AB-1234','उदा. DL-01-AB-1234','ಉದಾ. KA-01-AB-1234')}" maxlength="20" />
+        <label class="label">${L.nickname}</label>
+        <input type="text" class="input-field" id="modal-v-nickname"
+          placeholder="${L.nickPh}" maxlength="30" />
       </div>
 
+      <!-- Registration -->
       <div class="form-group">
-        <label class="label">${tr('Brand','ब्रांड','ಬ್ರಾಂಡ್')}</label>
+        <label class="label">${L.reg}</label>
+        <input type="text" class="input-field" id="modal-v-number"
+          placeholder="${L.regPh}" maxlength="20"
+          style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" />
+      </div>
+
+      <!-- Brand -->
+      <div class="form-group">
+        <label class="label">${L.brand}</label>
         <select class="input-field" id="modal-v-brand" onchange="modalUpdateModels()">
-          <option value="">${tr('Select brand','ब्रांड चुनें','ಬ್ರಾಂಡ್ ಆಯ್ಕೆಮಾಡಿ')}</option>
+          <option value="">${L.selBrand}</option>
           ${(VEHICLE_BRANDS.bike || []).map(b => `<option value="${b}">${b}</option>`).join('')}
         </select>
       </div>
 
+      <!-- Model -->
       <div class="form-group">
-        <label class="label">${tr('Model','मॉडल','ಮಾಡೆಲ್')}</label>
+        <label class="label">${L.model}</label>
         <select class="input-field" id="modal-v-model">
-          <option value="">${tr('Select brand first','पहले ब्रांड चुनें','ಮೊದಲು ಬ್ರಾಂಡ್ ಆಯ್ಕೆಮಾಡಿ')}</option>
+          <option value="">${L.selBrandFirst}</option>
         </select>
       </div>
 
+      <!-- Year + CC -->
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
         <div class="form-group">
-          <label class="label">${tr('Year','साल','ವರ್ಷ')}</label>
+          <label class="label">${L.year}</label>
           <select class="input-field" id="modal-v-year">
             ${Array.from({length:15},(_,i)=>2026-i).map(y=>`<option value="${y}">${y}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
-          <label class="label">Engine CC</label>
+          <label class="label">${L.cc}</label>
           <input type="number" class="input-field" id="modal-v-cc" placeholder="110" min="50" max="2000" />
         </div>
       </div>
 
+      <!-- Last Service -->
       <div class="form-group">
-        <label class="label">${tr('Last service date','अंतिम सर्विस','ಕೊನೆಯ ಸರ್ವಿಸ್')}</label>
-        <input type="date" class="input-field" id="modal-v-service-date" value="${new Date().toISOString().split('T')[0]}" />
+        <label class="label">${L.service}</label>
+        <input type="date" class="input-field" id="modal-v-service-date"
+          value="${new Date().toISOString().split('T')[0]}" />
       </div>
 
+      <!-- Odometer -->
       <div class="form-group">
-        <label class="label">${tr('Odometer (km)','ओडोमीटर (km)','ಓಡೋಮೀಟರ್')}</label>
+        <label class="label">${L.odo}</label>
         <input type="number" class="input-field" id="modal-v-odometer" placeholder="15000" min="0" />
       </div>
 
+      <!-- ── LOCATION SECTION ── -->
+      <div class="form-group">
+        <label class="label">📍 ${L.location}</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" class="input-field" id="modal-v-location"
+            placeholder="${L.locPh}" style="flex:1;" />
+          <button type="button" class="btn btn-secondary btn-sm" style="white-space:nowrap; flex-shrink:0;"
+            onclick="modalDetectLocation()">
+            🎯 ${L.detectLoc}
+          </button>
+        </div>
+        <div id="modal-loc-status" style="font-size:0.72rem; color:var(--brand-orange); margin-top:4px; min-height:16px;"></div>
+      </div>
+
+      <!-- Nearby Mechanics -->
+      <div class="form-group">
+        <label class="label">🔧 ${L.nearbyMech}</label>
+        <button type="button" class="btn btn-secondary btn-full" onclick="modalFindMechanics()" id="modal-find-mech-btn">
+          🗺️ ${L.findMech}
+        </button>
+        <div id="modal-mechanics-list" style="margin-top:10px; display:none;">
+          <!-- populated by modalFindMechanics() -->
+        </div>
+      </div>
+
+      <!-- Actions -->
       <div style="display:flex; gap:10px; margin-top:8px;">
-        <button class="btn btn-ghost btn-full" onclick="document.getElementById('add-vehicle-modal').remove()">${t('cancel')}</button>
-        <button class="btn btn-primary btn-full" onclick="saveVehicleFromModal()">💾 ${tr('Save','सेव करें','ಉಳಿಸಿ')}</button>
+        <button class="btn btn-ghost btn-full" onclick="document.getElementById('add-vehicle-modal').remove()">${L.cancel}</button>
+        <button class="btn btn-primary btn-full" onclick="saveVehicleFromModal()">💾 ${L.save}</button>
       </div>
     </div>
   `;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
+}
+
+/* ── Modal photo helpers ── */
+function modalOnPhotoSelected(ev, fromCamera) {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  if (file.size > 2 * 1024 * 1024) {
+    showToast(tr('Image too large (max 2MB)', 'फोटो बहुत बड़ी है (अधिकतम 2MB)', 'ಚಿತ್ರ ತುಂಬಾ ದೊಡ್ಡದು (ಗರಿಷ್ಠ 2MB)'));
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    newVehicle.imageDataUrl = reader.result;
+    const preview = document.getElementById('modal-photo-preview');
+    const img = document.getElementById('modal-photo-img');
+    if (preview && img) {
+      img.src = reader.result;
+      preview.style.display = 'block';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function modalClearPhoto() {
+  newVehicle.imageDataUrl = null;
+  const preview = document.getElementById('modal-photo-preview');
+  if (preview) preview.style.display = 'none';
+  // Reset file inputs
+  document.querySelectorAll('#add-vehicle-modal input[type="file"]').forEach(inp => inp.value = '');
+}
+
+/* ── Location helpers ── */
+function modalDetectLocation() {
+  const statusEl = document.getElementById('modal-loc-status');
+  const input = document.getElementById('modal-v-location');
+  if (!navigator.geolocation) {
+    if (statusEl) statusEl.textContent = tr('Location not supported', 'लोकेशन समर्थित नहीं', 'ಸ್ಥಳ ಬೆಂಬಲಿತವಾಗಿಲ್ಲ');
+    return;
+  }
+  if (statusEl) statusEl.textContent = tr('Detecting…', 'पता लगाया जा रहा है…', 'ಪತ್ತೆ ಮಾಡಲಾಗುತ್ತಿದೆ…');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      newVehicle.location = { lat, lng };
+      // Reverse geocode using nominatim (free, no key needed)
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+        .then(r => r.json())
+        .then(data => {
+          const addr = data.address;
+          const area = addr.suburb || addr.neighbourhood || addr.village || addr.town || addr.city || '';
+          const city = addr.city || addr.town || addr.state_district || '';
+          const display = [area, city].filter(Boolean).join(', ') || data.display_name?.split(',').slice(0,2).join(',') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          if (input) input.value = display;
+          if (statusEl) statusEl.textContent = '✅ ' + tr('Location detected', 'लोकेशन मिली', 'ಸ್ಥಳ ಪತ್ತೆಯಾಯಿತು');
+        })
+        .catch(() => {
+          if (input) input.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          if (statusEl) statusEl.textContent = '✅ ' + tr('GPS coordinates saved', 'GPS कोऑर्डिनेट सेव', 'GPS ನಿರ್ದೇಶಾಂಕ ಉಳಿಸಲಾಗಿದೆ');
+        });
+    },
+    err => {
+      const msg = err.code === 1
+        ? tr('Location permission denied', 'लोकेशन अनुमति नहीं', 'ಸ್ಥಳ ಅನುಮತಿ ನಿರಾಕರಿಸಲಾಗಿದೆ')
+        : tr('Could not get location', 'लोकेशन नहीं मिली', 'ಸ್ಥಳ ಪಡೆಯಲಾಗಲಿಲ್ಲ');
+      if (statusEl) statusEl.textContent = '⚠ ' + msg;
+    },
+    { timeout: 8000 }
+  );
+}
+
+function modalFindMechanics() {
+  const btn = document.getElementById('modal-find-mech-btn');
+  const listEl = document.getElementById('modal-mechanics-list');
+  const locInput = document.getElementById('modal-v-location');
+  const locText = locInput?.value?.trim();
+
+  // Build Google Maps search query
+  const query = locText
+    ? `bike mechanic near ${encodeURIComponent(locText)}`
+    : 'bike mechanic near me';
+
+  // Open Google Maps search in new tab
+  window.open(`https://www.google.com/maps/search/${query}`, '_blank');
+
+  // Also show nearby static suggestions in the modal
+  if (listEl) {
+    listEl.style.display = 'block';
+    const mechanics = [
+      { name: tr('Hero Service Centre', 'हीरो सर्विस सेंटर', 'ಹೀರೋ ಸರ್ವಿಸ್ ಸೆಂಟರ್'), dist: '0.8 km', rating: '4.5', open: true },
+      { name: tr('Bajaj Authorised', 'बजाज ऑथराइज्ड', 'ಬಜಾಜ್ ಅಧಿಕೃತ'), dist: '1.2 km', rating: '4.3', open: true },
+      { name: tr('Local Auto Garage', 'लोकल ऑटो गैराज', 'ಸ್ಥಳೀಯ ಆಟೋ ಗ್ಯಾರೇಜ್'), dist: '1.8 km', rating: '4.1', open: false },
+    ];
+    const openLabel = tr('Open', 'खुला', 'ತೆರೆದಿದೆ');
+    const closedLabel = tr('Closed', 'बंद', 'ಮುಚ್ಚಿದೆ');
+    const callLabel = tr('Call', 'कॉल', 'ಕರೆ');
+    listEl.innerHTML = mechanics.map(m => `
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 12px;
+                  background:var(--bg-card); border:1px solid var(--border-card);
+                  border-radius:var(--radius-md); margin-bottom:6px;">
+        <div style="width:36px; height:36px; border-radius:50%; background:rgba(255,107,53,0.12);
+                    display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">🔧</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:0.82rem; font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.name}</div>
+          <div style="font-size:0.7rem; color:var(--text-muted);">
+            ⭐ ${m.rating} · ${m.dist}
+            <span style="color:${m.open ? 'var(--brand-green)' : 'var(--brand-red)'}; font-weight:600; margin-left:4px;">
+              ${m.open ? openLabel : closedLabel}
+            </span>
+          </div>
+        </div>
+        <a href="tel:+91" class="btn btn-sm btn-secondary" style="flex-shrink:0; padding:6px 10px; font-size:0.72rem;">
+          📞 ${callLabel}
+        </a>
+      </div>
+    `).join('') + `
+      <button type="button" class="btn btn-ghost btn-full btn-sm" style="margin-top:4px;"
+        onclick="window.open('https://www.google.com/maps/search/${query}','_blank')">
+        🗺️ ${tr('View all on Google Maps', 'Google Maps पर देखें', 'Google Maps ನಲ್ಲಿ ನೋಡಿ')}
+      </button>
+    `;
+  }
 }
 
 function startDiagnose(vehicleId) {

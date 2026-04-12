@@ -25,7 +25,7 @@ function renderEsp32Screen() {
 
   el.innerHTML = `
     <div class="page-header">
-      <div class="back-btn" onclick="goBack(); renderHomeScreen();">${Icons.back}</div>
+      <div class="back-btn" onclick="goBack(); refreshCurrentScreen();">${Icons.back}</div>
       <h2 class="page-title">📡 Live Sensor Data</h2>
     </div>
 
@@ -210,7 +210,7 @@ function renderEsp32Screen() {
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:10px;">
         <div class="fleet-ai-card reveal-card" style="--delay:0.4s;">
           <div class="fleet-ai-title" style="margin-bottom:10px;">🔊 Voice Alert</div>
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
             <button class="btn btn-sm btn-secondary" onclick="esp32Speak('engine')">🔊 Speak</button>
             <span id="esp32-voice-status" class="fleet-ai-sub">Click to announce</span>
           </div>
@@ -218,6 +218,17 @@ function renderEsp32Screen() {
             <button class="btn btn-sm btn-ghost" style="font-size:0.7rem; padding:5px 8px;" onclick="esp32Speak('engine')">Engine</button>
             <button class="btn btn-sm btn-ghost" style="font-size:0.7rem; padding:5px 8px;" onclick="esp32Speak('battery')">Battery</button>
             <button class="btn btn-sm btn-ghost" style="font-size:0.7rem; padding:5px 8px;" onclick="esp32Speak('tire')">Tire</button>
+          </div>
+          <!-- Module 8: Language selector -->
+          <div style="margin-top:10px;">
+            <div class="fleet-ai-sub" style="margin-bottom:4px;">Voice Language</div>
+            <select onchange="alertSetVoiceLang(this.value)" style="width:100%;padding:6px 10px;background:#0F1929;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#F1F5F9;font-size:0.78rem;">
+              <option value="en">English (en-IN)</option>
+              <option value="hi">हिंदी (hi-IN)</option>
+              <option value="kn">ಕನ್ನಡ (kn-IN)</option>
+              <option value="ta">தமிழ் (ta-IN)</option>
+              <option value="te">తెలుగు (te-IN)</option>
+            </select>
           </div>
         </div>
 
@@ -227,14 +238,46 @@ function renderEsp32Screen() {
             <span class="fleet-ai-sub">📶 WiFi (ESP32 → Server)</span>
             <span class="badge badge-green" id="esp32-wifi-badge">Active</span>
           </div>
-          <div style="display:flex; align-items:center; justify-content:space-between;">
-            <span class="fleet-ai-sub">🔵 Bluetooth (Demo)</span>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+            <span class="fleet-ai-sub">🔵 Bluetooth (BLE)</span>
             <span class="badge" style="background:rgba(100,116,139,0.15); color:var(--text-muted); border:1px solid rgba(100,116,139,0.2);">Idle</span>
           </div>
-          <div class="fleet-ai-sub" style="margin-top:8px; font-family:monospace;">
-            ESP32 → WiFi → Firebase → Dashboard
+          <!-- Module 1: BLE Connect button -->
+          <button class="btn btn-sm btn-secondary btn-full" onclick="bleConnect()" style="margin-bottom:6px;">📡 Connect via Bluetooth</button>
+          <!-- Module 11: Sim controls -->
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            <button id="rr-sim-toggle-btn" class="btn btn-sm btn-ghost" style="flex:1;font-size:0.7rem;" onclick="simToggle()">🟢 Sim ON</button>
+            <button class="btn btn-sm btn-ghost" style="flex:1;font-size:0.7rem;color:#EF4444;" onclick="simInjectBreakdown()">💥 Inject Breakdown</button>
           </div>
         </div>
+      </div>
+
+      <!-- Module 3: Alert History Log -->
+      <div class="fleet-ai-card reveal-card" style="--delay:0.5s; margin-bottom:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="fleet-ai-title">📋 Alert History</div>
+          <button class="btn btn-sm btn-ghost" style="font-size:0.68rem;" onclick="AlertManager.history=[];_alertUpdateHistoryUI();showToast('History cleared')">Clear</button>
+        </div>
+        <div id="rr-alert-history-list" style="max-height:160px;overflow-y:auto;">
+          <div style="font-size:0.8rem;color:#64748B;padding:8px 0;">No alerts yet</div>
+        </div>
+      </div>
+
+      <!-- Module 9: Breakdown Location Share -->
+      <div class="fleet-ai-card reveal-card" style="--delay:0.55s; margin-bottom:10px; background:linear-gradient(135deg,rgba(239,68,68,0.08),rgba(17,24,39,0.7)); border-color:rgba(239,68,68,0.2);">
+        <div class="fleet-ai-title" style="margin-bottom:8px;">📍 Breakdown Location Share</div>
+        <div class="fleet-ai-sub" style="margin-bottom:10px;">On breakdown, share your GPS location via WhatsApp instantly.</div>
+        <button class="btn btn-danger btn-sm btn-full" onclick="breakdownShareLocation()">🆘 Share Location on WhatsApp</button>
+      </div>
+
+      <!-- Module 6: Trip Controls -->
+      <div class="fleet-ai-card reveal-card" style="--delay:0.6s; margin-bottom:10px;">
+        <div class="fleet-ai-title" style="margin-bottom:8px;">🛣️ Trip Log</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="tripStart()">▶ Start Trip</button>
+          <button class="btn btn-sm btn-ghost" style="flex:1;" onclick="tripEnd()">⏹ End Trip</button>
+        </div>
+        <div id="rr-trip-history"></div>
       </div>
 
     </div>

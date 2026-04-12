@@ -230,18 +230,36 @@ function modalUpdateModels() {
 }
 
 function saveVehicleFromModal() {
-  const nickname = document.getElementById('modal-v-nickname')?.value.trim();
+  const nicknameEl = document.getElementById('modal-v-nickname');
+  const nickname = nicknameEl?.value.trim();
   if (!nickname) {
-    showToast(tr('Please enter a name for your vehicle', 'कृपया नाम दर्ज करें', 'ದಯವಿಟ್ಟು ಹೆಸರು ನಮೂದಿಸಿ'));
+    if (nicknameEl) {
+      nicknameEl.style.borderColor = 'var(--brand-red)';
+      nicknameEl.focus();
+      let errEl = document.getElementById('modal-nickname-err');
+      if (!errEl) {
+        errEl = document.createElement('div');
+        errEl.id = 'modal-nickname-err';
+        errEl.style.cssText = 'color:var(--brand-red);font-size:0.75rem;margin-top:4px;';
+        errEl.textContent = tr('Please enter a name for your vehicle', 'कृपया नाम दर्ज करें', 'ದಯವಿಟ್ಟು ಹೆಸರು ನಮೂದಿಸಿ');
+        nicknameEl.parentNode.appendChild(errEl);
+      }
+    }
     return;
   }
+  // Clear error state
+  if (nicknameEl) nicknameEl.style.borderColor = '';
+  document.getElementById('modal-nickname-err')?.remove();
+
   const vehicle = {
     id: 'v' + Date.now(),
     type: newVehicle.type,
     emoji: newVehicle.emoji,
     nickname,
-    number: (document.getElementById('modal-v-number')?.value || '').trim(),
-    image: null,
+    number: (document.getElementById('modal-v-number')?.value || '').trim().toUpperCase(),
+    image: newVehicle.imageDataUrl || null,
+    location: document.getElementById('modal-v-location')?.value?.trim() || null,
+    gps: newVehicle.location || null,
     brand: document.getElementById('modal-v-brand')?.value || 'Other',
     model: document.getElementById('modal-v-model')?.value || 'Other',
     year: parseInt(document.getElementById('modal-v-year')?.value) || 2024,

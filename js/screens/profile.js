@@ -6,7 +6,7 @@ function renderProfileScreen() {
 
   el.innerHTML = `
     <div class="page-header">
-      <div class="back-btn" onclick="goBack(); renderHomeScreen();">${Icons.back}</div>
+      <div class="back-btn" onclick="goBack(); refreshCurrentScreen();">${Icons.back}</div>
       <h2 class="page-title">${t('profileSettings')}</h2>
     </div>
 
@@ -165,9 +165,10 @@ function renderProfileScreen() {
       <!-- About -->
       <div style="text-align: center; padding: 20px 0 40px;">
         <div style="font-size: 1.5rem; margin-bottom: 6px;">🏍️</div>
-        <div class="text-sm font-semibold gradient-text">Bike Health AI</div>
+        <div class="text-sm font-semibold gradient-text">RideRaksha</div>
         <div class="text-xs text-muted">v1.0 · Built in 1 day for CodeClash · India-first</div>
         <div class="text-xs text-muted mt-2">Challenge 03 · Mini Predictive Maintenance Assistant</div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:12px;" onclick="renderUserProfileModal()">👤 Edit User Profile</button>
       </div>
     </div>
 
