@@ -48,8 +48,6 @@ function renderHomeScreen() {
         </div>
       </div>
 
-      ${renderFleetIntelligenceSection(temp)}
-
       <!-- Quick Diagnose CTA -->
       <div class="quick-diagnose ripple" onclick="startDiagnose(null)" id="quick-diagnose-cta">
         <div class="quick-diagnose-label">⚡ Quick Action</div>
@@ -102,6 +100,9 @@ function renderHomeScreen() {
 
       <!-- ═══ ESP32 LIVE SENSOR SECTION ═══ -->
       ${renderEsp32HomeSection()}
+
+      <!-- ═══ FLEET INTELLIGENCE ═══ -->
+      ${renderFleetIntelligenceSection(temp)}
 
       <div style="height: 20px;"></div>
     </div>
@@ -521,7 +522,7 @@ function renderFleetIntelligenceSection(temp) {
           <button class="alert-filter" data-filter="critical">${L.critical}</button>
           <button class="alert-filter" data-filter="warning">${L.warning}</button>
         </div>
-        <div class="alert-list" id="alert-list">
+        <div class="alert-list" id="fleet-alert-list">
           ${alerts.map(a => `
             <div class="alert-item" data-alert-type="${a.type}">${a.icon} ${a.text}</div>
           `).join('')}
@@ -650,7 +651,7 @@ function buildSmartAlerts(perVehicle, isHi) {
 
 function bindSmartAlertFilters() {
   const filterWrap = document.getElementById('alert-filters');
-  const alertList = document.getElementById('alert-list');
+  const alertList = document.getElementById('fleet-alert-list');
   if (!filterWrap || !alertList) return;
 
   filterWrap.querySelectorAll('.alert-filter').forEach(btn => {

@@ -47,10 +47,10 @@ function bootstrapGlobals(win) {
       mechanicMode: false,
       streak: 0,
       lastCheckDate: null,
-      vehicles: [],
+      vehicles: [{ id: 'v1', type: 'bike', emoji: '🏍️', nickname: 'My Splendor', number: 'KA-01-MM-1234', image: null, brand: 'Hero', model: 'Splendor Plus', year: 2021, cc: 100, lastService: '2026-01-10', odometer: 18500, lastDiagnosis: null }],
       selectedVehicle: null,
       diagnoseInputs: {
-        vehicleId: null,
+        vehicleId: 'v1',
         engineTemp: 85,
         oilLevel: 60,
         batteryVolt: 12.6,
@@ -187,9 +187,9 @@ describe('Bug Condition Exploration — back from Profile/Tips when navHistory t
     win.State.navHistory = [];
     win.State.currentScreen = 'home';
     win.State.language = 'en';
-    win.State.vehicles = [];
+    win.State.vehicles = [{ id: 'v1', type: 'bike', emoji: '🏍️', nickname: 'My Splendor', number: 'KA-01', image: null, brand: 'Hero', model: 'Splendor Plus', year: 2021, cc: 100, lastService: '2026-01-10', odometer: 18500, lastDiagnosis: null }];
     win.State.diagnoseInputs = {
-      vehicleId: null,
+      vehicleId: 'v1',
       engineTemp: 85,
       oilLevel: 60,
       batteryVolt: 12.6,
@@ -251,7 +251,11 @@ describe('Bug Condition Exploration — back from Profile/Tips when navHistory t
       diagnoseHTML.includes('screen-diag-wrap') ||
       diagnoseHTML.includes('slider-engineTemp') ||
       diagnoseHTML.includes('Diagnose Vehicle') ||
-      diagnoseHTML.includes('diagnose-cta-wrapper');
+      diagnoseHTML.includes('diagnose-cta-wrapper') ||
+      diagnoseHTML.includes('startAiDiagnosis') ||
+      diagnoseHTML.includes('diag-start-btn') ||
+      diagnoseHTML.includes('Start AI Diagnosis') ||
+      diagnoseHTML.includes('AI Diagnosis');
 
     expect(
       hasDiagnoseContent,
@@ -316,7 +320,11 @@ describe('Bug Condition Exploration — back from Profile/Tips when navHistory t
       diagnoseHTML.includes('screen-diag-wrap') ||
       diagnoseHTML.includes('slider-engineTemp') ||
       diagnoseHTML.includes('Diagnose Vehicle') ||
-      diagnoseHTML.includes('diagnose-cta-wrapper');
+      diagnoseHTML.includes('diagnose-cta-wrapper') ||
+      diagnoseHTML.includes('startAiDiagnosis') ||
+      diagnoseHTML.includes('diag-start-btn') ||
+      diagnoseHTML.includes('Start AI Diagnosis') ||
+      diagnoseHTML.includes('AI Diagnosis');
 
     expect(
       hasDiagnoseContent,

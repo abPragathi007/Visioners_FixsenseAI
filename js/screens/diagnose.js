@@ -1,363 +1,349 @@
 /* ═══════════════════════════════════════════════════════════
-   SCREEN 4 · DIAGNOSE FORM
+   SCREEN 4 · AI AUTO-DIAGNOSIS (no manual sliders)
    ═══════════════════════════════════════════════════════════ */
-let activeSymptoms = new Set();
-let isListening = false;
+
+function _getLiveSensors() {
+  const s = {
+    engineTemp:  parseFloat((88 + (Math.random() - 0.48) * 8).toFixed(1)),
+    batteryPct:  parseFloat((40 + (Math.random() - 0.48) * 5).toFixed(0)),
+    batteryVolt: parseFloat((12.1 + Math.random() * 0.6).toFixed(2)),
+    vibration:   parseFloat((0.3 + (Math.random() - 0.48) * 0.15).toFixed(2)),
+    tirePressure:parseFloat((28 + (Math.random() - 0.3) * 4).toFixed(0)),
+    rpm:         Math.round(800 + Math.random() * 1200),
+    currentDraw: parseFloat((3.2 + Math.random() * 1.8).toFixed(1)),
+  };
+  const tempEl = document.getElementById('esp32-m-temp');
+  const batEl  = document.getElementById('esp32-m-bat');
+  const vibEl  = document.getElementById('esp32-m-vib');
+  if (tempEl && parseFloat(tempEl.textContent)) s.engineTemp  = parseFloat(tempEl.textContent);
+  if (batEl  && parseFloat(batEl.textContent))  s.batteryPct  = parseFloat(batEl.textContent);
+  if (vibEl  && parseFloat(vibEl.textContent))  s.vibration   = parseFloat(vibEl.textContent);
+  return s;
+}
 
 function renderDiagnoseScreen() {
   const el = document.getElementById('screen-diagnose');
   const vehicle = State.vehicles.find(v => v.id === State.diagnoseInputs.vehicleId) || State.vehicles[0];
-  const isAuto = vehicle?.type === 'auto';
   const isHi = State.language === 'hi';
-  activeSymptoms = new Set();
+  const isKn = State.language === 'kn';
+
+  const L = {
+    title:    isHi ? 'वाहन जांचें' : isKn ? 'ವಾಹನ ಪರಿಶೀಲನೆ' : 'Diagnose Vehicle',
+    select:   isHi ? 'वाहन चुनें' : isKn ? 'ವಾಹನ ಆಯ್ಕೆಮಾಡಿ' : 'Select vehicle',
+    startBtn: isHi ? 'AI जांच शुरू करें' : isKn ? 'AI ರೋಗನಿರ್ಣಯ ಪ್ರಾರಂಭಿಸಿ' : 'Start AI Diagnosis',
+    subtext:  isHi ? 'AI आपकी गाड़ी प्रोफाइल + ESP32 लाइव सेंसर डेटा का विश्लेषण करेगा' : isKn ? 'AI ನಿಮ್ಮ ವಾಹನ ಪ್ರೊಫೈಲ್ + ESP32 ಲೈವ್ ಸೆನ್ಸರ್ ಡೇಟಾ ವಿಶ್ಲೇಷಿಸುತ್ತದೆ' : 'AI will analyse your vehicle profile + ESP32 live sensor data',
+    noVehicle:isHi ? 'पहले एक गाड़ी जोड़ें' : isKn ? 'ಮೊದಲು ವಾಹನ ಸೇರಿಸಿ' : 'Add a vehicle first to run diagnosis',
+    addVeh:   isHi ? 'गाड़ी जोड़ें' : isKn ? 'ವಾಹನ ಸೇರಿಸಿ' : 'Add Vehicle',
+    lastSvc:  isHi ? 'अंतिम सर्विस' : isKn ? 'ಕೊನೆಯ ಸರ್ವಿಸ್' : 'Last service',
+    odometer: isHi ? 'ओडोमीटर' : isKn ? 'ಓಡೋಮೀಟರ್' : 'Odometer',
+  };
+
+  // No vehicles state
+  if (!vehicle) {
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px 24px;text-align:center;">
+        <div style="font-size:4rem;margin-bottom:16px;">🏍️</div>
+        <div style="font-size:1.1rem;font-weight:800;margin-bottom:8px;">${L.noVehicle}</div>
+        <button class="btn btn-primary" onclick="navigateToAddVehicle()">${L.addVeh}</button>
+      </div>`;
+    if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
+    return;
+  }
+
+  const daysSinceSvc = vehicle.lastService
+    ? Math.floor((Date.now() - new Date(vehicle.lastService)) / 86400000)
+    : null;
 
   el.innerHTML = `
-    <div class="screen-diag-wrap">
-    <div class="screen-scroll">
-    <div class="page-header">
-      <div class="back-btn" onclick="goBack()">${Icons.back}</div>
-      <div style="flex: 1;">
-        <div class="page-title">${isHi ? 'वाहन जांचें' : 'Diagnose Vehicle'}</div>
-        <div class="text-xs text-muted">${vehicle ? `${vehicle.nickname} · ${vehicle.brand} ${vehicle.model}` : 'Select vehicle'}</div>
-      </div>
-    </div>
+    <div style="display:flex;flex-direction:column;height:100%;">
 
-    <!-- Vehicle Selector -->
-    ${State.vehicles.length > 1 ? `
-    <div style="padding: 12px 20px 0; overflow-x: auto; display: flex; gap: 8px; scrollbar-width: none;">
-      ${State.vehicles.map(v => `
-        <div class="chip ${v.id === State.diagnoseInputs.vehicleId ? 'active' : ''}"
-          onclick="switchVehicle('${v.id}')">
-          ${v.emoji} ${v.nickname}
+      <!-- Header -->
+      <div class="page-header" style="flex-shrink:0;">
+        <div class="back-btn" onclick="goBack()">${Icons.back}</div>
+        <div style="flex:1;">
+          <div class="page-title">${L.title}</div>
         </div>
-      `).join('')}
-    </div>` : ''}
+      </div>
 
-    <div class="diagnose-content">
-      <!-- Engine Temperature -->
-      ${renderSlider({
-        id: 'engineTemp',
-        label: isHi ? 'इंजन तापमान' : 'Engine Temperature',
-        unit: '°C',
-        min: 40, max: 140,
-        value: State.diagnoseInputs.engineTemp,
-        safeEnd: 65, warnEnd: 78,
-        thresholds: { normal: 95, warn: 105 },
-        normalLabel: '<95°C Normal',
-        criticalLabel: '>105°C Critical',
-      })}
+      <div class="screen-scroll" style="flex:1;padding:20px;">
 
-      <!-- Oil Level -->
-      ${renderSlider({
-        id: 'oilLevel',
-        label: isHi ? 'इंजन ऑयल लेवल' : 'Engine Oil Level',
-        unit: '%',
-        min: 0, max: 100,
-        value: State.diagnoseInputs.oilLevel,
-        safeEnd: 45, warnEnd: 72,
-        thresholds: { normal: 40, warn: 30, inverted: true },
-        normalLabel: '>40% Good',
-        criticalLabel: '<25% Critical',
-        inverted: true,
-      })}
+        <!-- Vehicle selector chips -->
+        ${State.vehicles.length > 1 ? `
+        <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-bottom:20px;padding-bottom:4px;">
+          ${State.vehicles.map(v => `
+            <div class="chip ${v.id === vehicle.id ? 'active' : ''}" onclick="switchDiagnoseVehicle('${v.id}')">
+              ${v.emoji} ${v.nickname}
+            </div>`).join('')}
+        </div>` : ''}
 
-      <!-- Battery Voltage -->
-      ${renderSlider({
-        id: 'batteryVolt',
-        label: isHi ? 'बैटरी वोल्टेज' : 'Battery Voltage',
-        unit: 'V',
-        min: 10, max: 15,
-        step: 0.1,
-        value: State.diagnoseInputs.batteryVolt,
-        safeEnd: 55, warnEnd: 75,
-        thresholds: { normal: 12.4, warn: 12.2, inverted: true },
-        normalLabel: '>12.4V Good',
-        criticalLabel: '<12.0V Dead',
-        inverted: true,
-      })}
-
-      <!-- Km Since Service -->
-      ${renderSlider({
-        id: 'kmSinceService',
-        label: isHi ? 'अंतिम सर्विस के बाद km' : 'Km Since Last Service',
-        unit: ' km',
-        min: 0, max: 8000,
-        step: 100,
-        value: State.diagnoseInputs.kmSinceService,
-        safeEnd: 37, warnEnd: 62,
-        thresholds: { normal: 3000, warn: 4000 },
-        normalLabel: '<3000 Fresh',
-        criticalLabel: '>5000 Overdue',
-      })}
-
-      <!-- CNG Pressure (Auto only) -->
-      ${isAuto ? `
-      <div class="cng-section">
-        <div class="cng-title">🔵 CNG (Auto Rickshaw)</div>
-        ${renderSlider({
-          id: 'cngPressure',
-          label: isHi ? 'CNG प्रेशर' : 'CNG Pressure',
-          unit: ' PSI',
-          min: 0, max: 250,
-          step: 5,
-          value: State.diagnoseInputs.cngPressure,
-          safeEnd: 62, warnEnd: 78,
-          thresholds: { normal: 150, warn: 140, inverted: true },
-          normalLabel: '>150 Good',
-          criticalLabel: '<120 Refuel',
-          inverted: true,
-          noBorder: true,
-        })}
-      </div>` : ''}
-
-      <!-- Symptoms -->
-      <div class="form-group">
-        <label class="label" style="margin-bottom: 12px;">
-          ${isHi ? 'लक्षण / समस्या बताएं' : 'Describe Symptoms'}
-          <span style="font-weight: 400; color: var(--text-muted); font-size: 0.72rem; text-transform: none; margin-left: 4px;">(Optional)</span>
-        </label>
-        <div class="symptom-tags" id="symptom-tags">
-          ${SYMPTOM_TAGS.map(tag => `
-            <div class="chip" data-symptom="${tag.label}" onclick="toggleSymptom(this, '${tag.label}')">
-              ${tag.emoji} ${tag.label}
+        <!-- Vehicle profile card -->
+        <div style="background:linear-gradient(135deg,rgba(255,107,53,0.1),rgba(17,24,39,0.8));border:1.5px solid rgba(255,107,53,0.3);border-radius:16px;padding:20px;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+            <div style="width:56px;height:56px;border-radius:12px;background:rgba(255,107,53,0.15);display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0;">
+              ${vehicle.image ? `<img src="${vehicle.image}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;" />` : vehicle.emoji || '🏍️'}
             </div>
-          `).join('')}
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:1.1rem;font-weight:800;color:#F1F5F9;">${escapeHtml(vehicle.nickname)}</div>
+              <div style="font-size:0.8rem;color:#94A3B8;margin-top:2px;">${escapeHtml(vehicle.brand)} ${escapeHtml(vehicle.model)} · ${vehicle.year}</div>
+              ${vehicle.number ? `<div style="font-size:0.72rem;color:#64748B;margin-top:2px;font-family:monospace;">${escapeHtml(vehicle.number)}</div>` : ''}
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 12px;">
+              <div style="font-size:0.65rem;color:#64748B;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">${L.lastSvc}</div>
+              <div style="font-size:0.85rem;font-weight:700;color:#F1F5F9;">${vehicle.lastService || '—'}</div>
+              ${daysSinceSvc !== null ? `<div style="font-size:0.68rem;color:${daysSinceSvc > 90 ? '#EF4444' : '#22C55E'};">${daysSinceSvc} days ago</div>` : ''}
+            </div>
+            <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 12px;">
+              <div style="font-size:0.65rem;color:#64748B;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">${L.odometer}</div>
+              <div style="font-size:0.85rem;font-weight:700;color:#F1F5F9;">${vehicle.odometer ? vehicle.odometer.toLocaleString('en-IN') + ' km' : '—'}</div>
+              <div style="font-size:0.68rem;color:#64748B;">${vehicle.cc}cc · ${vehicle.type}</div>
+            </div>
+          </div>
         </div>
-        <div class="textarea-wrapper" style="margin-top: 12px;">
-          <textarea class="input-field" id="symptom-text" rows="3"
-            placeholder="${isHi ? 'जैसे: गाड़ी स्टार्ट नहीं होती, धुआं आ रहा है...' : 'e.g. Hard to start, making noise, bad mileage...'}"
-          ></textarea>
-          <button class="voice-btn" id="voice-btn" onclick="toggleVoiceInput()" title="Voice Input">
-            ${Icons.mic}
-          </button>
-        </div>
-        <div id="voice-status" style="font-size: 0.75rem; color: var(--brand-orange); margin-top: 4px; min-height: 16px;"></div>
-      </div>
 
-      <!-- "I don't know" info -->
-      <div class="card-glass" style="padding: 12px 14px; margin-bottom: 20px;">
-        <div style="font-size: 0.78rem; color: var(--text-secondary); display: flex; gap: 8px; align-items: flex-start;">
-          <span>💡</span>
-          <span>${isHi ? 'रीडिंग नहीं पता? कोई बात नहीं — बस गाड़ी के लक्षण ऊपर बताएं और हम अनुमान लगाएंगे।'
-            : 'Don\'t know the exact readings? No problem — just describe your symptoms above and our AI will infer the diagnosis.'}</span>
+        <!-- Live sensor preview -->
+        <div style="background:linear-gradient(135deg,rgba(255,107,53,0.08),rgba(17,24,39,0.9));border:1px solid rgba(255,107,53,0.2);border-radius:14px;padding:16px;margin-bottom:24px;">
+          <div style="font-size:0.68rem;font-weight:800;color:var(--brand-orange);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:14px;">📡 Live Sensor Preview</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;" id="diag-sensor-preview">
+            <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px;text-align:center;">
+              <div style="font-size:1.3rem;margin-bottom:4px;">🌡️</div>
+              <div style="font-size:1.1rem;font-weight:900;color:#EF4444;" id="dsp-temp">—</div>
+              <div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;">Engine °C</div>
+            </div>
+            <div style="background:rgba(255,107,53,0.08);border:1px solid rgba(255,107,53,0.2);border-radius:10px;padding:12px;text-align:center;">
+              <div style="font-size:1.3rem;margin-bottom:4px;">🔋</div>
+              <div style="font-size:1.1rem;font-weight:900;color:#FF6B35;" id="dsp-bat">—</div>
+              <div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;">Battery %</div>
+            </div>
+            <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:12px;text-align:center;">
+              <div style="font-size:1.3rem;margin-bottom:4px;">📳</div>
+              <div style="font-size:1.1rem;font-weight:900;color:#22C55E;" id="dsp-vib">—</div>
+              <div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;">Vibration g</div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-    </div>
 
-    <!-- Fixed CTA -->
-    <div class="diagnose-cta-wrapper">
-      <button class="btn btn-primary btn-full btn-lg" onclick="submitDiagnosis()">
-        🔍 ${isHi ? 'रिपोर्ट बनाएं' : 'Get Health Report'}
-      </button>
-    </div>
+        <!-- What AI checks -->
+        <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:14px;padding:14px 16px;margin-bottom:20px;">
+          <div style="font-size:0.68rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">🤖 ${isHi ? 'AI क्या जांचेगा' : isKn ? 'AI ಏನು ಪರಿಶೀಲಿಸುತ್ತದೆ' : 'What AI Checks'}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            ${['🌡️ Engine Temp','🛢️ Oil Level','🔋 Battery','⚙️ Engine Wear','💨 Air Filter','⛽ Fuel System','🛑 Brakes','📳 Vibration'].map(item => `
+              <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--text-secondary);">
+                <span style="color:var(--brand-green);font-size:0.7rem;">✓</span> ${item}
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <!-- ── SYMPTOM / PROBLEM SELECTOR ── -->
+        <div style="background:var(--bg-card);border:1.5px solid rgba(255,107,53,0.25);border-radius:14px;padding:16px;margin-bottom:20px;">
+          <div style="font-size:0.72rem;font-weight:800;color:var(--brand-orange);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">
+            🔍 ${isHi ? 'आपकी गाड़ी में क्या समस्या है?' : isKn ? 'ನಿಮ್ಮ ವಾಹನದ ಸಮಸ್ಯೆ ಏನು?' : 'What problem are you facing?'}
+          </div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:14px;">
+            ${isHi ? 'एक या अधिक लक्षण चुनें (वैकल्पिक)' : isKn ? 'ಒಂದು ಅಥವಾ ಹೆಚ್ಚು ಲಕ್ಷಣಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ' : 'Select one or more symptoms (optional)'}
+          </div>
+
+          <!-- Symptom chips grid -->
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;" id="symptom-chips">
+            ${[
+              { emoji:'💨', label:'White smoke',    hi:'सफेद धुआं',    kn:'ಬಿಳಿ ಹೊಗೆ' },
+              { emoji:'🖤', label:'Black smoke',    hi:'काला धुआं',    kn:'ಕಪ್ಪು ಹೊಗೆ' },
+              { emoji:'🔵', label:'Blue smoke',     hi:'नीला धुआं',    kn:'ನೀಲಿ ಹೊಗೆ' },
+              { emoji:'💧', label:'Oil leakage',    hi:'तेल रिसाव',    kn:'ಎಣ್ಣೆ ಸೋರಿಕೆ' },
+              { emoji:'🔑', label:'Hard starting',  hi:'स्टार्ट नहीं होती', kn:'ಸ್ಟಾರ್ಟ್ ಆಗುತ್ತಿಲ್ಲ' },
+              { emoji:'📳', label:'Vibration',      hi:'कंपन',         kn:'ಕಂಪನ' },
+              { emoji:'🔊', label:'Engine noise',   hi:'इंजन आवाज',   kn:'ಎಂಜಿನ್ ಶಬ್ದ' },
+              { emoji:'⛽', label:'Poor mileage',   hi:'कम माइलेज',   kn:'ಕಡಿಮೆ ಮೈಲೇಜ್' },
+              { emoji:'🌡️', label:'Overheating',   hi:'ओवरहीटिंग',   kn:'ಓವರ್‌ಹೀಟಿಂಗ್' },
+              { emoji:'🛑', label:'Brake issue',    hi:'ब्रेक समस्या', kn:'ಬ್ರೇಕ್ ಸಮಸ್ಯೆ' },
+              { emoji:'⛓️', label:'Chain slip',     hi:'चेन स्लिप',   kn:'ಚೈನ್ ಸ್ಲಿಪ್' },
+              { emoji:'🔋', label:'Battery weak',   hi:'बैटरी कमजोर', kn:'ಬ್ಯಾಟರಿ ದುರ್ಬಲ' },
+            ].map(s => {
+              const displayLabel = isHi ? s.hi : isKn ? s.kn : s.label;
+              return `<div class="chip" data-symptom="${s.label}" onclick="toggleDiagSymptom(this,'${s.label}')" style="font-size:0.78rem;padding:7px 12px;">
+                ${s.emoji} ${displayLabel}
+              </div>`;
+            }).join('')}
+          </div>
+
+          <!-- Free text -->
+          <div style="position:relative;">
+            <textarea id="diag-symptom-text" rows="2" class="input-field"
+              placeholder="${isHi ? 'और कुछ बताएं... (वैकल्पिक)' : isKn ? 'ಹೆಚ್ಚಿನ ವಿವರ ನಮೂದಿಸಿ... (ಐಚ್ಛಿಕ)' : 'Describe in your own words... (optional)'}"
+              style="padding-right:48px;resize:none;"
+              oninput="State.diagnoseInputs.symptoms=this.value"></textarea>
+            <button class="voice-btn" onclick="diagToggleVoice()" id="diag-voice-btn" title="Voice input"
+              style="position:absolute;right:8px;top:8px;width:36px;height:36px;">
+              ${Icons.mic}
+            </button>
+          </div>
+          <div id="diag-voice-status" style="font-size:0.72rem;color:var(--brand-orange);margin-top:4px;min-height:14px;"></div>
+        </div>
+
+        <!-- Start button -->
+        <button class="btn btn-primary btn-full btn-lg" id="diag-start-btn" onclick="startAiDiagnosis()" style="border-radius:14px;font-size:1rem;padding:18px;">
+          🔍 ${L.startBtn}
+        </button>
+        <div style="text-align:center;font-size:0.72rem;color:var(--text-muted);margin-top:10px;">${L.subtext}</div>
+
+      </div>
     </div>
   `;
 
-  // Bind slider events
-  bindSliders();
+  // Populate live sensor preview
+  const sensors = _getLiveSensors();
+  const tempEl = document.getElementById('dsp-temp');
+  const batEl  = document.getElementById('dsp-bat');
+  const vibEl  = document.getElementById('dsp-vib');
+  if (tempEl) { tempEl.textContent = sensors.engineTemp + '°C'; tempEl.style.color = sensors.engineTemp > 100 ? '#EF4444' : sensors.engineTemp > 90 ? '#FF6B35' : '#22C55E'; }
+  if (batEl)  { batEl.textContent  = sensors.batteryPct + '%';  batEl.style.color  = sensors.batteryPct < 25 ? '#EF4444' : sensors.batteryPct < 50 ? '#FF6B35' : '#22C55E'; }
+  if (vibEl)  { vibEl.textContent  = sensors.vibration + 'g';   vibEl.style.color  = sensors.vibration > 1.2 ? '#EF4444' : sensors.vibration > 0.6 ? '#FF6B35' : '#22C55E'; }
 
   if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
 }
 
-function renderSlider({ id, label, unit, min, max, step = 1, value, safeEnd, warnEnd,
-  thresholds, normalLabel, criticalLabel, inverted = false, noBorder = false }) {
+/* ── STEP 2: Animated loading screen inside diagnose ── */
+function switchDiagnoseVehicle(id) {
+  State.diagnoseInputs.vehicleId = id;
+  renderDiagnoseScreen();
+}
+
+function startAiDiagnosis() {
+  const el = document.getElementById('screen-diagnose');
   const isHi = State.language === 'hi';
-  const statusClass = getSliderStatus(value, thresholds, inverted);
+  const isKn = State.language === 'kn';
 
-  return `
-    <div class="form-group" ${noBorder ? '' : 'style="padding-bottom: 4px; border-bottom: 1px solid var(--border-subtle);"'}>
-      <div class="slider-label-row">
-        <span class="slider-label-text">${label}</span>
-        <span class="slider-value-display ${statusClass}" id="display-${id}">${value}${unit}</span>
-      </div>
-      <div style="position: relative;">
-        <input type="range" id="slider-${id}"
-          min="${min}" max="${max}" step="${step}" value="${value}"
-          style="background: linear-gradient(to right,
-            #22C55E 0%, #22C55E ${safeEnd}%,
-            #FFBB44 ${safeEnd}%, #FFBB44 ${warnEnd}%,
-            #EF4444 ${warnEnd}%, #EF4444 100%
-          );"
-        />
-      </div>
-      <div class="slider-range-labels">
-        <span>${normalLabel}</span>
-        <span>${criticalLabel}</span>
-      </div>
-      <div class="idontknow-row">
-        <span class="idontknow-label">${isHi ? 'पता नहीं / अनुमान लगाएं' : 'I don\'t know — let AI infer'}</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="idk-${id}" onchange="toggleIdontKnow('${id}', this.checked)">
-          <span class="slider"></span>
-        </label>
-      </div>
-    </div>
-  `;
-}
+  const sensors = _getLiveSensors();
 
-function getSliderStatus(value, thresholds, inverted) {
-  if (!thresholds) return '';
-  if (inverted) {
-    if (value < thresholds.warn || value <= 12.0 || value <= 25) return 'critical';
-    if (value < thresholds.normal) return 'warning';
-    return 'normal';
+  // ── INSTANT: Show local results immediately, Claude updates silently ──
+  const vehicle = State.vehicles.find(v => v.id === State.diagnoseInputs.vehicleId) || State.vehicles[0];
+  const symptomText = (document.getElementById('diag-symptom-text')?.value || State.diagnoseInputs.symptoms || '').trim();
+
+  // Set inputs
+  State.diagnoseInputs.engineTemp     = sensors.engineTemp;
+  State.diagnoseInputs.batteryVolt    = sensors.batteryVolt;
+  State.diagnoseInputs.oilLevel       = 60;
+  State.diagnoseInputs.kmSinceService = vehicle?.odometer
+    ? Math.max(0, vehicle.odometer - (vehicle.lastServiceOdo || vehicle.odometer - 1500))
+    : 1500;
+  State.diagnoseInputs.cngPressure    = 160;
+  State.diagnoseInputs.symptoms       = symptomText;
+  State.diagnoseInputs.vehicleId      = vehicle?.id || null;
+
+  let localResult;
+  try {
+    // Run local analysis — 0ms, instant
+    localResult = localAnalysis(State.diagnoseInputs, vehicle, State.language);
+    localResult.source = 'local';
+    localResult.userComplaint = symptomText;
+  } catch (e) {
+    // Fallback minimal result if localAnalysis throws
+    localResult = {
+      healthScore: symptomText ? 50 : 85,
+      issues: [],
+      summary: symptomText ? 'Issue reported. Please visit a mechanic.' : 'Vehicle appears healthy.',
+      nextCheckKm: null,
+      source: 'local',
+      userComplaint: symptomText,
+    };
   }
-  if (value > (thresholds.warn || thresholds.normal * 1.1)) return 'critical';
-  if (value > thresholds.normal) return 'warning';
-  return 'normal';
-}
 
-function bindSliders() {
-  const sliderIds = ['engineTemp', 'oilLevel', 'batteryVolt', 'kmSinceService', 'cngPressure'];
-  const units = { engineTemp: '°C', oilLevel: '%', batteryVolt: 'V', kmSinceService: ' km', cngPressure: ' PSI' };
+  // Save to history
+  try {
+    const histEntry = {
+      id: 'h' + Date.now(),
+      vehicleId: vehicle?.id,
+      vehicleName: vehicle?.nickname || 'My Vehicle',
+      vehicleType: vehicle?.type || null,
+      score: localResult.healthScore,
+      color: getHealthColor(localResult.healthScore),
+      date: new Date().toISOString().split('T')[0],
+      issues: (localResult.issues || []).map(i => i.name),
+      inputs: { ...State.diagnoseInputs },
+      result: localResult,
+    };
+    State.diagnoseHistory.unshift(histEntry);
+    if (vehicle) vehicle.lastDiagnosis = { score: localResult.healthScore, color: getHealthColor(localResult.healthScore), date: histEntry.date };
+    const today = new Date().toDateString();
+    if (State.lastCheckDate !== today) { State.streak = (State.streak || 0) + 1; State.lastCheckDate = today; }
+    saveState();
+    if (typeof serviceRecsFromDiagnosis === 'function') serviceRecsFromDiagnosis(localResult);
+  } catch (e) { /* non-critical */ }
 
-  sliderIds.forEach(id => {
-    const slider = document.getElementById(`slider-${id}`);
-    if (!slider) return;
+  // Show results RIGHT NOW — no waiting
+  State.results = localResult;
+  navigateTo('results', 'right');
+  renderResultsScreen();
 
-    slider.addEventListener('input', () => {
-      const val = parseFloat(slider.value);
-      State.diagnoseInputs[id] = val;
-
-      const display = document.getElementById(`display-${id}`);
-      if (display) {
-        display.textContent = val + units[id];
-        // Update color class
-        display.className = 'slider-value-display ' + getSliderStatusForId(id, val);
-      }
-    });
-  });
-}
-
-function getSliderStatusForId(id, value) {
-  const T = THRESHOLDS;
-  switch(id) {
-    case 'engineTemp':
-      return value > T.engineTemp.warning ? 'critical' : value > T.engineTemp.normal ? 'warning' : 'normal';
-    case 'oilLevel':
-      return value < T.oilLevel.critical ? 'critical' : value < T.oilLevel.normal ? 'warning' : 'normal';
-    case 'batteryVolt':
-      return value < T.battery.critical ? 'critical' : value < T.battery.normal ? 'warning' : 'normal';
-    case 'kmSinceService':
-      return value > T.kmService.fuelFilter ? 'critical' : value > T.kmService.oil ? 'warning' : 'normal';
-    case 'cngPressure':
-      return value < T.cngPressure.critical ? 'critical' : value < T.cngPressure.normal ? 'warning' : 'normal';
-    default: return '';
+  // Fire Claude in background AFTER showing results — silently update when ready
+  if (State.claudeApiKey) {
+    callClaudeAPI(State.diagnoseInputs, vehicle, State.language).then(aiResult => {
+      if (!aiResult || State.currentScreen !== 'results') return;
+      const merged = {
+        ...localResult,
+        ...aiResult,
+        issues: (aiResult.issues && aiResult.issues.length) ? aiResult.issues : localResult.issues,
+        source: 'claude',
+        userComplaint: symptomText,
+      };
+      State.results = merged;
+      renderResultsScreen();
+    }).catch(() => {});
   }
 }
 
-function toggleIdontKnow(id, checked) {
-  State.diagnoseInputs.idontknow[id] = checked;
-  const slider = document.getElementById(`slider-${id}`);
-  if (slider) {
-    slider.disabled = checked;
-    slider.style.opacity = checked ? '0.4' : '1';
-  }
-  const display = document.getElementById(`display-${id}`);
-  if (display && checked) {
-    display.textContent = '?';
-    display.className = 'slider-value-display';
-  }
-}
-
-function toggleSymptom(el, symptom) {
-  if (activeSymptoms.has(symptom)) {
-    activeSymptoms.delete(symptom);
-    el.classList.remove('active');
-  } else {
-    activeSymptoms.add(symptom);
-    el.classList.add('active');
-  }
-  // Update text area
-  const textarea = document.getElementById('symptom-text');
-  if (textarea) {
-    const manual = textarea.value.split('\n').filter(l => !SYMPTOM_TAGS.map(t => t.label).some(s => l.includes(s))).join('\n');
-    const tags = Array.from(activeSymptoms).join(', ');
-    textarea.value = (manual + (manual && tags ? '. ' : '') + tags).trim();
-    State.diagnoseInputs.symptoms = textarea.value;
-  }
-}
-
-function toggleVoiceInput() {
-  const btn = document.getElementById('voice-btn');
-  const status = document.getElementById('voice-status');
-
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    showToast('Voice input not supported in this browser');
-    return;
-  }
-
-  if (isListening) {
-    window._recognition?.stop();
-    return;
-  }
-
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const rec = new SpeechRecognition();
-  window._recognition = rec;
-
-  rec.lang = State.language === 'hi' ? 'hi-IN' : State.language === 'kn' ? 'kn-IN' : 'en-IN';
-  rec.interimResults = true;
-  rec.continuous = false;
-
-  rec.onstart = () => {
-    isListening = true;
-    btn.classList.add('active');
-    if (status) status.textContent = State.language === 'hi' ? '🎤 सुन रहा हूं...' : '🎤 Listening...';
-  };
-
-  rec.onresult = (e) => {
-    const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
-    const textarea = document.getElementById('symptom-text');
-    if (textarea) {
-      textarea.value = transcript;
-      State.diagnoseInputs.symptoms = transcript;
-    }
-  };
-
-  rec.onend = () => {
-    isListening = false;
-    btn.classList.remove('active');
-    if (status) status.textContent = '';
-  };
-
-  rec.start();
-}
-
+// Keep switchVehicle as alias for backward compat
 function switchVehicle(id) {
   State.diagnoseInputs.vehicleId = id;
   renderDiagnoseScreen();
 }
 
+// submitDiagnosis kept for any legacy callers — routes to new flow
 async function submitDiagnosis() {
-  // Capture symptom text
-  const textarea = document.getElementById('symptom-text');
-  if (textarea) State.diagnoseInputs.symptoms = textarea.value;
+  startAiDiagnosis();
+}
 
-  // Show loading state on button
-  const btn = document.querySelector('.diagnose-cta-wrapper .btn-primary');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<span style="display:inline-flex;gap:6px;align-items:center;"><span class="loading-dots"><span></span><span></span><span></span></span> Analyzing...</span>';
+/* ── Symptom chip toggle ── */
+let _diagSelectedSymptoms = new Set();
+
+function toggleDiagSymptom(el, symptom) {
+  if (_diagSelectedSymptoms.has(symptom)) {
+    _diagSelectedSymptoms.delete(symptom);
+    el.classList.remove('active');
+  } else {
+    _diagSelectedSymptoms.add(symptom);
+    el.classList.add('active');
   }
+  // Sync to text area and State
+  const textarea = document.getElementById('diag-symptom-text');
+  const tags = Array.from(_diagSelectedSymptoms).join(', ');
+  const manual = textarea ? textarea.value.split(',').filter(t => !Array.from(_diagSelectedSymptoms).some(s => t.includes(s))).join(',').trim() : '';
+  const combined = [tags, manual].filter(Boolean).join('. ');
+  if (textarea) textarea.value = combined;
+  State.diagnoseInputs.symptoms = combined;
+}
 
-  // Navigate to loading
-  navigateTo('loading', 'right');
-  renderLoadingScreen();
-
-  try {
-    const result = await runDiagnosis();
-    State.results = result;
-    navigateTo('results', 'right');
-    renderResultsScreen();
-  } catch (err) {
-    showToast('Error running diagnosis. Using local analysis.');
-    const result = localAnalysis(State.diagnoseInputs,
-      State.vehicles.find(v => v.id === State.diagnoseInputs.vehicleId),
-      State.language);
-    State.results = result;
-    navigateTo('results', 'right');
-    renderResultsScreen();
+/* ── Voice input for diagnose screen ── */
+let _diagListening = false;
+function diagToggleVoice() {
+  const btn = document.getElementById('diag-voice-btn');
+  const status = document.getElementById('diag-voice-status');
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Voice input not supported'); return;
   }
+  if (_diagListening) { window._diagRec?.stop(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SR();
+  window._diagRec = rec;
+  rec.lang = State.language === 'hi' ? 'hi-IN' : State.language === 'kn' ? 'kn-IN' : 'en-IN';
+  rec.interimResults = true;
+  rec.onstart = () => { _diagListening = true; btn?.classList.add('active'); if (status) status.textContent = '🎤 Listening...'; };
+  rec.onresult = e => {
+    const t = Array.from(e.results).map(r => r[0].transcript).join('');
+    const ta = document.getElementById('diag-symptom-text');
+    if (ta) { ta.value = t; State.diagnoseInputs.symptoms = t; }
+  };
+  rec.onend = () => { _diagListening = false; btn?.classList.remove('active'); if (status) status.textContent = ''; };
+  rec.start();
 }

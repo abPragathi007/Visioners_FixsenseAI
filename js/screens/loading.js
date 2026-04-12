@@ -97,5 +97,5 @@ function startLoadingAnimation() {
       clearInterval(loadingInterval);
       if (barEl) barEl.style.width = '100%';
     }
-  }, 600);
+  }, 200);
 }
