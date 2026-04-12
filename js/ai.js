@@ -315,6 +315,7 @@ async function runDiagnosis() {
     id: 'h' + Date.now(),
     vehicleId: vehicle?.id,
     vehicleName: vehicle?.nickname || 'My Vehicle',
+    vehicleType: vehicle?.type || null,
     score: result.healthScore,
     color: getHealthColor(result.healthScore),
     date: new Date().toISOString().split('T')[0],

@@ -138,6 +138,8 @@ function renderResultsScreen() {
 
   // Animate health ring and counter
   animateHealthScore(score, colorHex);
+
+  if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
 }
 
 function renderIssueCard(issue, isHi) {

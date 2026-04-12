@@ -3,20 +3,36 @@
    ═══════════════════════════════════════════════════════════ */
 function renderProfileScreen() {
   const el = document.getElementById('screen-profile');
-  const isHi = State.language === 'hi';
 
   el.innerHTML = `
     <div class="page-header">
       <div class="back-btn" onclick="goBack(); renderHomeScreen();">${Icons.back}</div>
-      <h2 class="page-title">${isHi ? 'प्रोफ़ाइल और सेटिंग्स' : 'Profile & Settings'}</h2>
+      <h2 class="page-title">${t('profileSettings')}</h2>
     </div>
 
-    <div class="profile-content">
+    <div class="profile-content screen-scroll">
       <!-- Profile Hero -->
       <div class="profile-hero">
         <div class="profile-avatar-large">🧑‍🔧</div>
-        <div class="profile-name">${isHi ? 'मेरा खाता' : 'My Account'}</div>
-        <div class="profile-since">${isHi ? 'Bike Health AI उपयोगकर्ता' : 'Bike Health AI Member'}</div>
+        <div class="profile-name">${t('myAccount')}</div>
+        <div class="profile-since">${t('memberTag')}</div>
+      </div>
+
+      <!-- Saved vehicles (thumbnails) -->
+      <div class="setting-group">
+        <div class="setting-group-title">${t('myVehicles')}</div>
+        <div class="profile-vehicles-row">
+          ${State.vehicles.length === 0
+    ? `<p class="text-xs text-muted">${t('addVehicle')}</p>`
+    : State.vehicles.map((v) => `
+            <div class="profile-vehicle-pill" onclick="navigateTo('home','left'); renderHomeScreen();">
+              ${v.image
+    ? `<img class="history-thumb" src="${String(v.image).replace(/"/g, '&quot;')}" alt="" />`
+    : `<span style="font-size:1.4rem">${v.emoji || '🏍️'}</span>`}
+              <span class="profile-vehicle-name">${escapeHtml(v.nickname)}</span>
+            </div>
+          `).join('')}
+        </div>
       </div>
 
       <!-- Streak -->
@@ -24,37 +40,37 @@ function renderProfileScreen() {
         <span class="streak-flame">🔥</span>
         <div>
           <div class="streak-count">${State.streak}</div>
-          <div class="streak-label">${isHi ? 'हफ्ते' : 'WEEK STREAK'}</div>
-          <div class="streak-desc">${isHi ? 'हर हफ्ते जांचते रहें — गाड़ी की उम्र बढ़ेगी!' : 'Keep checking every week to maintain your streak!'}</div>
+          <div class="streak-label">${tr('WEEK STREAK', 'हफ्तों की स्ट्रीक', 'ವಾರಗಳ ಸ್ಟ್ರೀಕ್')}</div>
+          <div class="streak-desc">${tr('Keep checking every week to maintain your streak!', 'हर हफ्ते जांचते रहें — गाड़ी की उम्र बढ़ेगी!', 'ಪ್ರತಿ ವಾರ ಪರಿಶೀಲಿಸಿ — ವಾಹನ ಆರೋಗ್ಯವನ್ನು ಕಾಪಾಡಿಕೊಳ್ಳಿ.')}</div>
         </div>
       </div>
 
       <!-- Badges -->
       <div class="setting-group">
-        <div class="setting-group-title">${isHi ? 'बैज' : 'Badges Earned'}</div>
+        <div class="setting-group-title">${t('badgesEarned')}</div>
         <div class="badges-row">
           <div class="badge-item earned">
             <span class="badge-emoji">🏆</span>
-            <div class="badge-name">${isHi ? 'पहली जांच' : 'First Check'}</div>
+            <div class="badge-name">${t('firstCheck')}</div>
           </div>
           <div class="badge-item earned">
             <span class="badge-emoji">🔥</span>
-            <div class="badge-name">${isHi ? '4 हफ्ते' : '4 Week Streak'}</div>
+            <div class="badge-name">${t('weekStreak4')}</div>
           </div>
           <div class="badge-item">
             <span class="badge-emoji">💎</span>
-            <div class="badge-name" style="color: var(--text-muted);">${isHi ? '12 हफ्ते' : '12 Weeks'}</div>
+            <div class="badge-name" style="color: var(--text-muted);">${t('weekStreak12')}</div>
           </div>
           <div class="badge-item">
             <span class="badge-emoji">🌟</span>
-            <div class="badge-name" style="color: var(--text-muted);">${isHi ? 'फ्लीट मास्टर' : 'Fleet Master'}</div>
+            <div class="badge-name" style="color: var(--text-muted);">${t('fleetMaster')}</div>
           </div>
         </div>
       </div>
 
       <!-- AI Settings -->
       <div class="setting-group">
-        <div class="setting-group-title">${isHi ? 'AI सेटिंग्स' : 'AI Settings'}</div>
+        <div class="setting-group-title">${t('aiSettings')}</div>
         <div class="setting-item" onclick="showApiKeyModal()">
           <div class="setting-left">
             <span class="setting-icon">🤖</span>
@@ -69,8 +85,8 @@ function renderProfileScreen() {
           <div class="setting-left">
             <span class="setting-icon">🔧</span>
             <div>
-              <div class="setting-label">${isHi ? 'मैकेनिक मोड' : 'Mechanic Mode'}</div>
-              <div class="setting-desc">${isHi ? 'तकनीकी भाषा में परिणाम' : 'Technical output for professionals'}</div>
+              <div class="setting-label">${t('mechanicMode')}</div>
+              <div class="setting-desc">${t('mechanicDesc')}</div>
             </div>
           </div>
           <label class="toggle-switch">
@@ -82,13 +98,13 @@ function renderProfileScreen() {
 
       <!-- Preferences -->
       <div class="setting-group">
-        <div class="setting-group-title">${isHi ? 'प्राथमिकताएं' : 'Preferences'}</div>
+        <div class="setting-group-title">${t('preferences')}</div>
         <div class="setting-item" onclick="showLanguageModal()">
           <div class="setting-left">
             <span class="setting-icon">🌐</span>
             <div>
-              <div class="setting-label">${isHi ? 'भाषा' : 'Language'}</div>
-              <div class="setting-desc">${State.language === 'hi' ? 'हिंदी' : 'English'}</div>
+              <div class="setting-label">${t('language')}</div>
+              <div class="setting-desc">${langDisplayName(State.language)}</div>
             </div>
           </div>
           <span class="setting-right">›</span>
@@ -97,8 +113,8 @@ function renderProfileScreen() {
           <div class="setting-left">
             <span class="setting-icon">🔔</span>
             <div>
-              <div class="setting-label">${isHi ? 'सर्विस रिमाइंडर' : 'Service Reminders'}</div>
-              <div class="setting-desc">${isHi ? 'हर 30 दिन पर याद दिलाएं' : 'Notify every 30 days'}</div>
+              <div class="setting-label">${t('serviceReminders')}</div>
+              <div class="setting-desc">${t('remind30')}</div>
             </div>
           </div>
           <label class="toggle-switch">
@@ -110,12 +126,12 @@ function renderProfileScreen() {
           <div class="setting-left">
             <span class="setting-icon">🌙</span>
             <div>
-              <div class="setting-label">${isHi ? 'डार्क मोड' : 'Dark Mode'}</div>
-              <div class="setting-desc">${isHi ? 'हमेशा डार्क' : 'Always dark (recommended)'}</div>
+              <div class="setting-label">${t('darkMode')}</div>
+              <div class="setting-desc">${t('themeDesc')}</div>
             </div>
           </div>
           <label class="toggle-switch">
-            <input type="checkbox" checked disabled>
+            <input type="checkbox" ${State.darkMode ? 'checked' : ''} onchange="setDarkModeFromUi(this.checked)">
             <span class="slider"></span>
           </label>
         </div>
@@ -123,13 +139,13 @@ function renderProfileScreen() {
 
       <!-- Data -->
       <div class="setting-group">
-        <div class="setting-group-title">${isHi ? 'डेटा' : 'Data & Privacy'}</div>
+        <div class="setting-group-title">${t('dataPrivacy')}</div>
         <div class="setting-item" onclick="exportHistory()">
           <div class="setting-left">
             <span class="setting-icon">📊</span>
             <div>
-              <div class="setting-label">${isHi ? 'CSV एक्सपोर्ट' : 'Export as CSV'}</div>
-              <div class="setting-desc">${isHi ? 'पूरा इतिहास डाउनलोड करें' : 'Download all diagnosis history'}</div>
+              <div class="setting-label">${t('exportCsv')}</div>
+              <div class="setting-desc">${t('exportDesc')}</div>
             </div>
           </div>
           <span class="setting-right">›</span>
@@ -138,8 +154,8 @@ function renderProfileScreen() {
           <div class="setting-left">
             <span class="setting-icon">🗑️</span>
             <div>
-              <div class="setting-label" style="color: var(--brand-red);">${isHi ? 'सारा डेटा मिटाएं' : 'Clear All Data'}</div>
-              <div class="setting-desc">${isHi ? 'इतिहास और गाड़ियां हटाएं' : 'Remove all vehicles and history'}</div>
+              <div class="setting-label" style="color: var(--brand-red);">${t('clearAll')}</div>
+              <div class="setting-desc">${t('clearDesc')}</div>
             </div>
           </div>
           <span class="setting-right">›</span>
@@ -155,8 +171,9 @@ function renderProfileScreen() {
       </div>
     </div>
 
-    ${renderBottomNav('profile')}
   `;
+
+  if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
 }
 
 function showApiKeyModal() {
@@ -200,36 +217,39 @@ function showLanguageModal() {
   modal.id = 'lang-modal';
 
   const langs = [
-    { code: 'en', native: 'English' },
-    { code: 'hi', native: 'हिंदी' },
-    { code: 'ta', native: 'தமிழ்' },
-    { code: 'te', native: 'తెలుగు' },
-    { code: 'kn', native: 'ಕನ್ನಡ' },
-    { code: 'mr', native: 'मराठी' },
+    { code: 'en', native: t('langEnglish') },
+    { code: 'hi', native: t('langHindi') },
+    { code: 'kn', native: t('langKannada') },
   ];
 
   modal.innerHTML = `
     <div class="modal-box">
-      <h3 class="modal-title">🌐 Select Language</h3>
+      <h3 class="modal-title">🌐 ${t('selectLanguage')}</h3>
       <div class="lang-grid" style="margin-bottom: 16px;">
         ${langs.map(l => `
-          <button class="lang-btn ${l.code === State.language ? 'selected' : ''}" onclick="setLanguage('${l.code}')">
+          <button type="button" class="lang-btn ${l.code === State.language ? 'selected' : ''}" onclick="setLanguage('${l.code}')">
             <span class="lang-native">${l.native}</span>
           </button>
         `).join('')}
       </div>
-      <button class="btn btn-ghost btn-full" onclick="closeModal()">Cancel</button>
+      <button type="button" class="btn btn-ghost btn-full" onclick="closeModal()">${t('cancel')}</button>
     </div>
   `;
   document.body.appendChild(modal);
 }
 
+function langDisplayName(code) {
+  const native = { en: 'English', hi: 'हिंदी', kn: 'ಕನ್ನಡ' };
+  return native[code] || native.en;
+}
+
 function setLanguage(code) {
   State.language = code;
   saveState();
+  applyDocumentLocale();
   closeModal();
-  renderProfileScreen();
-  showToast('Language updated!');
+  refreshCurrentScreen();
+  showToast(t('languageUpdated'));
 }
 
 function toggleMechanicMode() {
@@ -241,6 +261,9 @@ function toggleMechanicMode() {
 
 function clearData() {
   if (!confirm('Are you sure? This will delete all vehicles, history, and settings.')) return;
-  localStorage.clear();
+  localStorage.removeItem('bikeHealthAI');
+  localStorage.removeItem('bikeHealthAI_lang');
+  localStorage.removeItem('bikeHealthAI_theme');
+  localStorage.removeItem('bikeHealthAI_diagnoses');
   location.reload();
 }

@@ -48,6 +48,7 @@ const State = {
 function saveState() {
   const persist = {
     language: State.language,
+    darkMode: State.darkMode,
     vehicles: State.vehicles,
     diagnoseHistory: State.diagnoseHistory,
     claudeApiKey: State.claudeApiKey,
@@ -58,17 +59,60 @@ function saveState() {
   localStorage.setItem('bikeHealthAI', JSON.stringify(persist));
 }
 
+function migrateLegacyStorage() {
+  try {
+    const legacyLangRaw = localStorage.getItem('bikeHealthAI_lang');
+    if (legacyLangRaw) {
+      const lang = JSON.parse(legacyLangRaw);
+      if (typeof lang === 'string') State.language = lang;
+    }
+    const legacyThemeRaw = localStorage.getItem('bikeHealthAI_theme');
+    if (legacyThemeRaw) {
+      const th = JSON.parse(legacyThemeRaw);
+      if (th === 'light') State.darkMode = false;
+      else if (th === 'dark') State.darkMode = true;
+    }
+  } catch (e) {
+    console.warn('Legacy key migration skipped', e);
+  }
+}
+
 function loadState() {
   try {
-    const saved = JSON.parse(localStorage.getItem('bikeHealthAI') || '{}');
+    const raw = localStorage.getItem('bikeHealthAI');
+    if (!raw) {
+      migrateLegacyStorage();
+      if (!['en', 'hi', 'kn'].includes(State.language)) State.language = 'en';
+      return;
+    }
+    const saved = JSON.parse(raw);
     if (saved.language) State.language = saved.language;
-    if (saved.vehicles) State.vehicles = saved.vehicles;
+    if (!['en', 'hi', 'kn'].includes(State.language)) State.language = 'en';
+    if (saved.darkMode != null) State.darkMode = saved.darkMode;
+    if (saved.vehicles) {
+      State.vehicles = saved.vehicles.map(v => ({
+        ...v,
+        number: v.number != null ? String(v.number) : '',
+        image: v.image || null,
+      }));
+    }
     if (saved.diagnoseHistory) State.diagnoseHistory = saved.diagnoseHistory;
     if (saved.claudeApiKey) State.claudeApiKey = saved.claudeApiKey;
     if (saved.streak != null) State.streak = saved.streak;
     if (saved.lastCheckDate) State.lastCheckDate = saved.lastCheckDate;
     if (saved.mechanicMode != null) State.mechanicMode = saved.mechanicMode;
-  } catch(e) { console.warn('Could not load state', e); }
+  } catch (e) {
+    console.warn('Could not load state', e);
+  }
+}
+
+function applyDocumentLocale() {
+  const map = { en: 'en', hi: 'hi', kn: 'kn' };
+  document.documentElement.lang = map[State.language] || 'en';
+}
+
+function applyThemeToDocument() {
+  document.documentElement.setAttribute('data-theme', State.darkMode ? 'dark' : 'light');
 }
 
 // ── Navigation ──
@@ -99,6 +143,10 @@ function navigateTo(screenId, direction = 'right') {
 
   // Scroll to top
   next.scrollTop = 0;
+
+  queueMicrotask(() => {
+    if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
+  });
 }
 
 function goBack() {
@@ -116,6 +164,10 @@ function goBack() {
   }
 
   State.currentScreen = prev;
+
+  queueMicrotask(() => {
+    if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
+  });
 }
 
 // ── Toast ──
@@ -136,6 +188,11 @@ function showToast(message, duration = 3000) {
 const I18N = {
   en: {
     appName: 'Bike Health AI',
+    navHome: 'Home',
+    navDiagnose: 'Diagnose',
+    navHistory: 'History',
+    navTips: 'Tips',
+    navProfile: 'Profile',
     diagnose: 'Diagnose',
     history: 'History',
     tips: 'Tips & Learn',
@@ -152,9 +209,52 @@ const I18N = {
     checkingThresholds: 'Checking 11 fault thresholds...',
     calculatingScore: 'Calculating health score...',
     generatingReport: 'Generating your report...',
+    yourVehicles: 'Your Vehicles',
+    myVehicles: 'My Vehicles',
+    addVehicle: 'Add Vehicle',
+    vehicleReg: 'Registration number',
+    vehiclePhoto: 'Photo',
+    aiAssistant: 'AI Assistant',
+    chatPlaceholder: 'Ask anything about your bike...',
+    emergencyGuide: 'Emergency Guide',
+    issueType: 'Issue type',
+    offlineGuide: 'Offline guide',
+    profileSettings: 'Profile & Settings',
+    myAccount: 'My Account',
+    memberTag: 'Bike Health AI Member',
+    badgesEarned: 'Badges Earned',
+    firstCheck: 'First Check',
+    weekStreak4: '4 Week Streak',
+    weekStreak12: '12 Weeks',
+    fleetMaster: 'Fleet Master',
+    aiSettings: 'AI Settings',
+    mechanicMode: 'Mechanic Mode',
+    mechanicDesc: 'Technical output for professionals',
+    preferences: 'Preferences',
+    language: 'Language',
+    serviceReminders: 'Service Reminders',
+    remind30: 'Notify every 30 days',
+    darkMode: 'Dark Mode',
+    themeDesc: 'Light or dark theme',
+    dataPrivacy: 'Data & Privacy',
+    exportCsv: 'Export as CSV',
+    exportDesc: 'Download all diagnosis history',
+    clearAll: 'Clear All Data',
+    clearDesc: 'Remove all vehicles and history',
+    langEnglish: 'English',
+    langHindi: 'हिंदी',
+    langKannada: 'ಕನ್ನಡ',
+    selectLanguage: 'Select Language',
+    cancel: 'Cancel',
+    languageUpdated: 'Language updated!',
   },
   hi: {
     appName: 'बाइक हेल्थ AI',
+    navHome: 'होम',
+    navDiagnose: 'जांचें',
+    navHistory: 'इतिहास',
+    navTips: 'सुझाव',
+    navProfile: 'प्रोफ़ाइल',
     diagnose: 'जांचें',
     history: 'इतिहास',
     tips: 'सुझाव',
@@ -171,11 +271,131 @@ const I18N = {
     checkingThresholds: '11 खराबी मापदंड जांचे जा रहे हैं...',
     calculatingScore: 'स्वास्थ्य स्कोर गणना हो रही है...',
     generatingReport: 'आपकी रिपोर्ट तैयार हो रही है...',
+    yourVehicles: 'आपकी गाड़ियां',
+    myVehicles: 'मेरी गाड़ियां',
+    addVehicle: 'गाड़ी जोड़ें',
+    vehicleReg: 'पंजीकरण संख्या',
+    vehiclePhoto: 'फोटो',
+    aiAssistant: 'AI सहायक',
+    chatPlaceholder: 'अपनी बाइक के बारे में पूछें...',
+    emergencyGuide: 'आपातकालीन मार्गदर्शन',
+    issueType: 'समस्या प्रकार',
+    offlineGuide: 'ऑफ़लाइन गाइड',
+    profileSettings: 'प्रोफ़ाइल और सेटिंग्स',
+    myAccount: 'मेरा खाता',
+    memberTag: 'Bike Health AI उपयोगकर्ता',
+    badgesEarned: 'बैज',
+    firstCheck: 'पहली जांच',
+    weekStreak4: '4 हफ्ते',
+    weekStreak12: '12 हफ्ते',
+    fleetMaster: 'फ्लीट मास्टर',
+    aiSettings: 'AI सेटिंग्स',
+    mechanicMode: 'मैकेनिक मोड',
+    mechanicDesc: 'तकनीकी भाषा में परिणाम',
+    preferences: 'प्राथमिकताएं',
+    language: 'भाषा',
+    serviceReminders: 'सर्विस रिमाइंडर',
+    remind30: 'हर 30 दिन पर याद दिलाएं',
+    darkMode: 'डार्क मोड',
+    themeDesc: 'लाइट या डार्क थीम',
+    dataPrivacy: 'डेटा और गोपनीयता',
+    exportCsv: 'CSV एक्सपोर्ट',
+    exportDesc: 'पूरा इतिहास डाउनलोड करें',
+    clearAll: 'सारा डेटा मिटाएं',
+    clearDesc: 'इतिहास और गाड़ियां हटाएं',
+    langEnglish: 'English',
+    langHindi: 'हिंदी',
+    langKannada: 'ಕನ್ನಡ',
+    selectLanguage: 'भाषा चुनें',
+    cancel: 'रद्द करें',
+    languageUpdated: 'भाषा अपडेट हो गई!',
+  },
+  kn: {
+    appName: 'ಬೈಕ್ ಹೆಲ್ತ್ AI',
+    navHome: 'ಮುಖಪುಟ',
+    navDiagnose: 'ಪರಿಶೀಲನೆ',
+    navHistory: 'ಇತಿಹಾಸ',
+    navTips: 'ಸಲಹೆಗಳು',
+    navProfile: 'ಪ್ರೊಫೈಲ್',
+    diagnose: 'ಪರಿಶೀಲನೆ',
+    history: 'ಇತಿಹಾಸ',
+    tips: 'ಸಲಹೆಗಳು ಮತ್ತು ಕಲಿಕೆ',
+    profile: 'ಪ್ರೊಫೈಲ್',
+    home: 'ಮುಖಪುಟ',
+    healthScore: 'ಆರೋಗ್ಯ ಅಂಕ',
+    fixToday: 'ಇಂದು ಸರಿಪಡಿಸಿ',
+    withinWeek: '1 ವಾರದೊಳಗೆ',
+    monitor: 'ಮೇಲ್ವಿಚಾರಣೆ',
+    findMechanic: 'ಮೆಕ್ಯಾನಿಕ್ ಹುಡುಕಿ',
+    shareReport: 'ವರದಿ ಹಂಚಿಕೊಳ್ಳಿ',
+    noIssues: 'ಯಾವುದೇ ಸಮಸ್ಯೆ ಇಲ್ಲ! ನಿಮ್ಮ ವಾಹನ ಚೆನ್ನಾಗಿದೆ.',
+    analyzing: 'ನಿಮ್ಮ ವಾಹನವನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ...',
+    checkingThresholds: '11 ದೋಷ ಮಾನದಂಡಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...',
+    calculatingScore: 'ಆರೋಗ್ಯ ಅಂಕ ಲೆಕ್ಕಹಾಕಲಾಗುತ್ತಿದೆ...',
+    generatingReport: 'ನಿಮ್ಮ ವರದಿ ತಯಾರಾಗುತ್ತಿದೆ...',
+    yourVehicles: 'ನಿಮ್ಮ ವಾಹನಗಳು',
+    myVehicles: 'ನನ್ನ ವಾಹನಗಳು',
+    addVehicle: 'ವಾಹನ ಸೇರಿಸಿ',
+    vehicleReg: 'ನೋಂದಣಿ ಸಂಖ್ಯೆ',
+    vehiclePhoto: 'ಫೋಟೋ',
+    aiAssistant: 'AI ಸಹಾಯಕ',
+    chatPlaceholder: 'ನಿಮ್ಮ ಪ್ರಶ್ನೆ ಕೇಳಿ...',
+    emergencyGuide: 'ತುರ್ತು ಮಾರ್ಗದರ್ಶನ',
+    issueType: 'ಸಮಸ್ಯೆ ಪ್ರಕಾರ',
+    offlineGuide: 'ಆಫ್‌ಲೈನ್ ಮಾರ್ಗದರ್ಶನ',
+    profileSettings: 'ಪ್ರೊಫೈಲ್ ಮತ್ತು ಸೆಟ್ಟಿಂಗ್‌ಗಳು',
+    myAccount: 'ನನ್ನ ಖಾತೆ',
+    memberTag: 'Bike Health AI ಸದಸ್ಯ',
+    badgesEarned: 'ಬ್ಯಾಡ್ಜ್‌ಗಳು',
+    firstCheck: 'ಮೊದಲ ಪರಿಶೀಲನೆ',
+    weekStreak4: '4 ವಾರಗಳ ಸ್ಟ್ರೀಕ್',
+    weekStreak12: '12 ವಾರಗಳು',
+    fleetMaster: 'ಫ್ಲೀಟ್ ಮಾಸ್ಟರ್',
+    aiSettings: 'AI ಸೆಟ್ಟಿಂಗ್‌ಗಳು',
+    mechanicMode: 'ಮೆಕ್ಯಾನಿಕ್ ಮೋಡ್',
+    mechanicDesc: 'ತಾಂತ್ರಿಕ ಔಟ್‌ಪುಟ್',
+    preferences: 'ಆದ್ಯತೆಗಳು',
+    language: 'ಭಾಷೆ',
+    serviceReminders: 'ಸರ್ವಿಸ್ ಜ್ಞಾಪನೆಗಳು',
+    remind30: 'ಪ್ರತಿ 30 ದಿನಗಳಿಗೆ',
+    darkMode: 'ಡಾರ್ಕ್ ಮೋಡ್',
+    themeDesc: 'ಲೈಟ್ ಅಥವಾ ಡಾರ್ಕ್ ಥೀಮ್',
+    dataPrivacy: 'ಡೇಟಾ ಮತ್ತು ಗೌಪ್ಯತೆ',
+    exportCsv: 'CSV ರಫ್ತು',
+    exportDesc: 'ಎಲ್ಲಾ ಇತಿಹಾಸ ಡೌನ್‌ಲೋಡ್',
+    clearAll: 'ಎಲ್ಲಾ ಡೇಟಾ ಅಳಿಸಿ',
+    clearDesc: 'ವಾಹನಗಳು ಮತ್ತು ಇತಿಹಾಸ ತೆಗೆದುಹಾಕಿ',
+    langEnglish: 'English',
+    langHindi: 'हिंदी',
+    langKannada: 'ಕನ್ನಡ',
+    selectLanguage: 'ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ',
+    cancel: 'ರದ್ದು',
+    languageUpdated: 'ಭಾಷೆ ನವೀಕರಿಸಲಾಗಿದೆ!',
   }
 };
 
 function t(key) {
-  return (I18N[State.language] && I18N[State.language][key]) || I18N.en[key] || key;
+  const lang = ['en', 'hi', 'kn'].includes(State.language) ? State.language : 'en';
+  if (typeof TRANSLATIONS !== 'undefined' && TRANSLATIONS[lang] && TRANSLATIONS[lang][key] != null) {
+    return TRANSLATIONS[lang][key];
+  }
+  return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
+}
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** English / Hindi / Kannada short strings for gradual migration */
+function tr(en, hi, kn) {
+  const k = kn != null ? kn : en;
+  if (State.language === 'hi') return hi;
+  if (State.language === 'kn') return k;
+  return en;
 }
 
 // ── SVG Icons ──

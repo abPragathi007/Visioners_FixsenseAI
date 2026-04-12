@@ -87,22 +87,29 @@ body {
 
 /* ── App Shell ── */
 #app {
-  max-width: 430px;
+  max-width: 1200px;
+  width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
   position: relative;
   background: var(--bg-primary);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* ── Screen Base ── */
 .screen {
   display: none;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .screen.active {
@@ -490,6 +497,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
   color: var(--text-primary);
 }
 
+[data-theme="light"] .bottom-nav {
+  background: rgba(255, 255, 255, 0.96);
+  border-top-color: var(--border-subtle);
+}
+
 /* ── Page Header ── */
 .page-header {
   padding: 20px 20px 0;
@@ -813,4 +825,22 @@ input[type="range"]::-webkit-slider-thumb:hover {
     opacity: 0.5;
     transform: scale(0.8);
   }
+}
+
+/* ── Light theme (toggle from Profile) ── */
+[data-theme="light"] {
+  --bg-primary: #f1f5f9;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-input: #f8fafc;
+  --bg-glass: rgba(255, 107, 53, 0.06);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --border-subtle: rgba(15, 23, 42, 0.08);
+  --border-card: rgba(15, 23, 42, 0.12);
+  --grad-card: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  --grad-hero: linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #f1f5f9 100%);
+  --shadow-card: 0 4px 24px rgba(15, 23, 42, 0.08);
 }

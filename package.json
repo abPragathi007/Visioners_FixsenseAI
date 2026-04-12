@@ -1,0 +1,11 @@
+{
+  "name": "bike-health-ai",
+  "private": true,
+  "description": "Static Bike Health AI app — run `npm start` then open http://localhost:3000",
+  "scripts": {
+    "start": "serve . -l 3000"
+  },
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}

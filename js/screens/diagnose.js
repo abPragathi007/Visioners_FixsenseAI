@@ -12,6 +12,8 @@ function renderDiagnoseScreen() {
   activeSymptoms = new Set();
 
   el.innerHTML = `
+    <div class="screen-diag-wrap">
+    <div class="screen-scroll">
     <div class="page-header">
       <div class="back-btn" onclick="goBack()">${Icons.back}</div>
       <div style="flex: 1;">
@@ -141,6 +143,7 @@ function renderDiagnoseScreen() {
         </div>
       </div>
     </div>
+    </div>
 
     <!-- Fixed CTA -->
     <div class="diagnose-cta-wrapper">
@@ -148,10 +151,13 @@ function renderDiagnoseScreen() {
         🔍 ${isHi ? 'रिपोर्ट बनाएं' : 'Get Health Report'}
       </button>
     </div>
+    </div>
   `;
 
   // Bind slider events
   bindSliders();
+
+  if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
 }
 
 function renderSlider({ id, label, unit, min, max, step = 1, value, safeEnd, warnEnd,
@@ -291,7 +297,7 @@ function toggleVoiceInput() {
   const rec = new SpeechRecognition();
   window._recognition = rec;
 
-  rec.lang = State.language === 'hi' ? 'hi-IN' : 'en-IN';
+  rec.lang = State.language === 'hi' ? 'hi-IN' : State.language === 'kn' ? 'kn-IN' : 'en-IN';
   rec.interimResults = true;
   rec.continuous = false;
 

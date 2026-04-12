@@ -17,7 +17,7 @@ function renderTipsScreen() {
       <h2 class="page-title">${isHi ? 'सुझाव और जानें' : 'Tips & Learn'}</h2>
     </div>
 
-    <div class="tips-content">
+    <div class="tips-content screen-scroll">
       <!-- Hero -->
       <div class="tips-hero">
         <span class="tips-hero-icon">🌧️</span>
@@ -30,7 +30,7 @@ function renderTipsScreen() {
       <!-- Category Pills -->
       <div class="category-pills">
         ${TIPS_CATEGORIES.map(cat => `
-          <div class="chip ${activeCategory === cat ? 'active' : ''}" onclick="filterTips('${cat}')">
+          <div class="chip ${activeCategory === cat ? 'active' : ''}" onclick="filterTips(${JSON.stringify(cat)})">
             ${cat}
           </div>
         `).join('')}
@@ -48,8 +48,9 @@ function renderTipsScreen() {
       <div style="height: 40px;"></div>
     </div>
 
-    ${renderBottomNav('tips')}
   `;
+
+  if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
 }
 
 function renderArticleCard(article, isHi) {

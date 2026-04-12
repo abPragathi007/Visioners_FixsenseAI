@@ -55,10 +55,7 @@ function renderLangSelector() {
   const langs = [
     { code: 'en', native: 'English', en: 'English' },
     { code: 'hi', native: 'हिंदी', en: 'Hindi' },
-    { code: 'ta', native: 'தமிழ்', en: 'Tamil' },
-    { code: 'te', native: 'తెలుగు', en: 'Telugu' },
     { code: 'kn', native: 'ಕನ್ನಡ', en: 'Kannada' },
-    { code: 'mr', native: 'मराठी', en: 'Marathi' },
   ];
 
   return `
@@ -149,6 +146,7 @@ function goToSlide(i) {
 
 function finishOnboarding() {
   saveState();
+  applyDocumentLocale();
   navigateTo('home', 'right');
   renderHomeScreen();
 }

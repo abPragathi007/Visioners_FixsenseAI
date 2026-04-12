@@ -1,31 +1,93 @@
 /* ═══════════════════════════════════════════════════════════
    SCREEN 7 · HISTORY
    ═══════════════════════════════════════════════════════════ */
-let historyFilter = 'All';
+let historyVehicleFilter = 'All';
+let historyTypeFilter = 'all'; // all | bike | scooter | auto
+let historySeverityFilter = 'all'; // all | critical
+let historyPeriodFilter = 'all'; // all | month
+
+function historyEntryVehicleType(entry) {
+  if (entry.vehicleType) return entry.vehicleType;
+  const v = State.vehicles.find(x => x.id === entry.vehicleId);
+  return v?.type || null;
+}
+
+function buildFilteredHistory() {
+  let list = [...State.diagnoseHistory];
+
+  if (historyVehicleFilter !== 'All') {
+    list = list.filter(h => h.vehicleName === historyVehicleFilter);
+  }
+
+  if (historyTypeFilter !== 'all') {
+    list = list.filter(h => historyEntryVehicleType(h) === historyTypeFilter);
+  }
+
+  if (historySeverityFilter === 'critical') {
+    list = list.filter(h => (h.score ?? 100) < 50);
+  }
+
+  if (historyPeriodFilter === 'month') {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    list = list.filter(h => {
+      const d = new Date(h.date);
+      return !Number.isNaN(d.getTime()) && d >= start;
+    });
+  }
+
+  return list;
+}
 
 function renderHistoryScreen() {
   const el = document.getElementById('screen-history');
   const isHi = State.language === 'hi';
   const history = State.diagnoseHistory;
+  const filtered = buildFilteredHistory();
 
   const vehicleNames = ['All', ...new Set(history.map(h => h.vehicleName))];
-  const filtered = historyFilter === 'All' ? history : history.filter(h => h.vehicleName === historyFilter);
+
+  const L = {
+    typeAll: isHi ? 'सभी प्रकार' : 'All types',
+    bike: isHi ? 'बाइक' : 'Bike',
+    scooter: isHi ? 'स्कूटर' : 'Scooter',
+    auto: isHi ? 'ऑटो' : 'Auto',
+    severityAll: isHi ? 'सभी' : 'All scores',
+    criticalOnly: isHi ? 'केवल क्रिटिकल' : 'Critical only',
+    periodAll: isHi ? 'सभी समय' : 'All time',
+    thisMonth: isHi ? 'यह महीना' : 'This month',
+    filters: isHi ? 'फ़िल्टर' : 'Filters',
+  };
 
   el.innerHTML = `
     <div class="page-header">
       <div class="back-btn" onclick="goBack(); renderHomeScreen();">${Icons.back}</div>
       <h2 class="page-title">${isHi ? 'जांच का इतिहास' : 'Diagnosis History'}</h2>
-      <button class="btn btn-ghost btn-sm" onclick="exportHistory()">📤 Export</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportHistoryFiltered()">📤 Export</button>
     </div>
 
-    <div class="history-content">
-      <!-- Filters -->
+    <div class="history-content screen-scroll">
+      <!-- Vehicle chips -->
       <div class="filter-row">
         ${vehicleNames.map(name => `
-          <div class="chip ${historyFilter === name ? 'active' : ''}" onclick="filterHistory('${name}')">
-            ${name === 'All' ? '🚗 All Vehicles' : name}
+          <div class="chip ${historyVehicleFilter === name ? 'active' : ''}" onclick="filterHistory(${JSON.stringify(name)})">
+            ${name === 'All' ? '🚗 ' + (isHi ? 'सभी वाहन' : 'All Vehicles') : name}
           </div>
         `).join('')}
+      </div>
+
+      <div class="section-title" style="margin-top:4px;">${L.filters}</div>
+      <div class="filter-row">
+        <div class="chip ${historyTypeFilter === 'all' ? 'active' : ''}" onclick="setHistoryTypeFilter('all')">${L.typeAll}</div>
+        <div class="chip ${historyTypeFilter === 'bike' ? 'active' : ''}" onclick="setHistoryTypeFilter('bike')">🏍️ ${L.bike}</div>
+        <div class="chip ${historyTypeFilter === 'scooter' ? 'active' : ''}" onclick="setHistoryTypeFilter('scooter')">🛵 ${L.scooter}</div>
+        <div class="chip ${historyTypeFilter === 'auto' ? 'active' : ''}" onclick="setHistoryTypeFilter('auto')">🛺 ${L.auto}</div>
+      </div>
+      <div class="filter-row">
+        <div class="chip ${historySeverityFilter === 'all' ? 'active' : ''}" onclick="setHistorySeverityFilter('all')">${L.severityAll}</div>
+        <div class="chip ${historySeverityFilter === 'critical' ? 'active' : ''}" onclick="setHistorySeverityFilter('critical')">🔴 ${L.criticalOnly}</div>
+        <div class="chip ${historyPeriodFilter === 'all' ? 'active' : ''}" onclick="setHistoryPeriodFilter('all')">${L.periodAll}</div>
+        <div class="chip ${historyPeriodFilter === 'month' ? 'active' : ''}" onclick="setHistoryPeriodFilter('month')">📅 ${L.thisMonth}</div>
       </div>
 
       <!-- Trend Chart -->
@@ -37,20 +99,20 @@ function renderHistoryScreen() {
       ${filtered.length === 0
         ? `<div class="card" style="text-align: center; padding: 32px;">
             <div style="font-size: 3rem; margin-bottom: 12px;">📭</div>
-            <p class="text-secondary">${isHi ? 'अभी तक कोई जांच नहीं हुई।' : 'No diagnoses yet. Run your first check!'}</p>
+            <p class="text-secondary">${isHi ? 'इन फ़िल्टर के लिए कोई रिकॉर्ड नहीं।' : 'No records match these filters.'}</p>
            </div>`
         : filtered.map(entry => renderHistoryItem(entry, isHi)).join('')
       }
     </div>
 
-    ${renderBottomNav('history')}
   `;
+
+  if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
 }
 
 function renderTrendChart(entries) {
   if (entries.length < 2) return '';
   const reversed = [...entries].reverse();
-  const maxScore = Math.max(...reversed.map(e => e.score));
 
   return `
     <div class="trend-chart-wrapper">
@@ -70,12 +132,19 @@ function renderHistoryItem(entry, isHi) {
     ? entry.issues.slice(0, 2).join(', ') + (entry.issues.length > 2 ? ` +${entry.issues.length - 2} more` : '')
     : (isHi ? 'कोई समस्या नहीं' : 'No issues found');
 
-  const dateStr = new Date(entry.date).toLocaleDateString(isHi ? 'hi-IN' : 'en-IN', {
+  const loc = State.language === 'hi' ? 'hi-IN' : State.language === 'kn' ? 'kn-IN' : 'en-IN';
+  const dateStr = new Date(entry.date).toLocaleDateString(loc, {
     day: 'numeric', month: 'short', year: 'numeric'
   });
 
+  const veh = State.vehicles.find(v => v.id === entry.vehicleId);
+  const thumb = veh?.image
+    ? `<img class="history-thumb" src="${String(veh.image).replace(/"/g, '&quot;')}" alt="" />`
+    : `<div class="history-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--bg-secondary);font-size:1.2rem;">${veh?.emoji || '🏍️'}</div>`;
+
   return `
     <div class="history-item" onclick="viewHistoryEntry('${entry.id}')">
+      ${thumb}
       <div class="history-score ${entry.color}">${entry.score}</div>
       <div class="history-info">
         <div class="history-vehicle">${entry.vehicleName}</div>
@@ -88,26 +157,65 @@ function renderHistoryItem(entry, isHi) {
 }
 
 function filterHistory(name) {
-  historyFilter = name;
+  historyVehicleFilter = name;
+  renderHistoryScreen();
+}
+
+function setHistoryTypeFilter(type) {
+  historyTypeFilter = type;
+  renderHistoryScreen();
+}
+
+function setHistorySeverityFilter(sev) {
+  historySeverityFilter = sev;
+  renderHistoryScreen();
+}
+
+function setHistoryPeriodFilter(period) {
+  historyPeriodFilter = period;
   renderHistoryScreen();
 }
 
 function viewHistoryEntry(id) {
   const entry = State.diagnoseHistory.find(h => h.id === id);
-  if (!entry?.result) return showToast('Full data not available for this entry');
+  if (!entry) return;
 
-  State.results = entry.result;
+  const isHi = State.language === 'hi';
+  if (entry.result) {
+    State.results = entry.result;
+  } else {
+    const sev = (entry.score ?? 50) < 50 ? 'critical' : (entry.score ?? 70) < 75 ? 'warning' : 'monitor';
+    State.results = {
+      healthScore: entry.score ?? 0,
+      issues: (entry.issues || []).map((name, i) => ({
+        id: 'hist-' + i,
+        name,
+        severity: sev,
+        action: isHi ? 'मैकेनिक से सलाह लें।' : 'Have a mechanic review this.',
+        costMin: 200,
+        costMax: 2000,
+        tip: isHi ? 'पुराना रिकॉर्ड — विवरण सीमित हो सकता है।' : 'Older record — details may be limited.',
+      })),
+      summary: isHi
+        ? 'यह पिछली जांच का सारांश है। नई जांच से अधिक सटीक परिणाम मिलेंगे।'
+        : 'Summary from a past check. Run a new diagnosis for full detail.',
+      nextCheckKm: null,
+      source: 'local',
+    };
+  }
+
   State.diagnoseInputs.vehicleId = entry.vehicleId;
   navigateTo('results', 'right');
   renderResultsScreen();
 }
 
-function exportHistory() {
+function exportHistoryFiltered() {
   const isHi = State.language === 'hi';
+  const rows = buildFilteredHistory();
   const csv = [
-    'Date,Vehicle,Score,Issues',
-    ...State.diagnoseHistory.map(h =>
-      `${h.date},"${h.vehicleName}",${h.score},"${h.issues?.join('; ') || ''}"`
+    'Date,Vehicle,Type,Score,Issues',
+    ...rows.map(h =>
+      `${h.date},"${h.vehicleName}",${historyEntryVehicleType(h) || ''},${h.score},"${h.issues?.join('; ') || ''}"`
     )
   ].join('\n');
 
@@ -117,4 +225,8 @@ function exportHistory() {
   a.download = 'bike_health_history.csv';
   a.click();
   showToast(isHi ? 'CSV डाउनलोड हो रहा है...' : 'Downloading CSV...');
+}
+
+function exportHistory() {
+  exportHistoryFiltered();
 }

@@ -60,6 +60,8 @@ function renderLoadingScreen() {
   `;
 
   startLoadingAnimation();
+
+  if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
 }
 
 function startLoadingAnimation() {

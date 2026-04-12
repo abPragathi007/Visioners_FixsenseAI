@@ -14,6 +14,7 @@ function showFleet() {
   const okCount   = vehicles.filter(v => (v.lastDiagnosis?.score || 100) >= 75).length;
 
   el.classList.add('active');
+  if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
 
   el.innerHTML = `
     <div class="page-header">
@@ -95,4 +96,5 @@ function showFleet() {
 
 function hideFleet() {
   document.getElementById('screen-fleet').classList.remove('active');
+  if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
 }

@@ -9,6 +9,7 @@ function showPretrip() {
   pretripAnswers = {};
 
   el.classList.add('active');
+  if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
 
   const questions = isHi ? [
     { id: 'mirror', text: '🪞 दर्पण और लाइट सही हैं?' },
@@ -103,4 +104,5 @@ function showPretripVerdict() {
 
 function hidePretrip() {
   document.getElementById('screen-pretrip').classList.remove('active');
+  if (typeof window.syncBottomNav === 'function') window.syncBottomNav();
 }
