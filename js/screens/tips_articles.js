@@ -180,6 +180,8 @@ function articleSwitchLang(code) {
     _openArticleModal(id, article);
   }
 }
+
+function articleToggleVoice(text) {
   const synth = window.speechSynthesis;
   if (!synth) { showToast('Voice not supported in this browser'); return; }
 
