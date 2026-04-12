@@ -1,0 +1,477 @@
+/* ═══════════════════════════════════════════════════════════
+   ANIMATIONS & TRANSITIONS
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Screen Transitions ── */
+.screen {
+  animation: none;
+}
+
+.screen.slide-in-right {
+  animation: slideInRight 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.screen.slide-in-left {
+  animation: slideInLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.screen.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+.screen.slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ── Stagger Children ── */
+.stagger-children>* {
+  animation: staggerFadeUp 0.4s ease both;
+}
+
+.stagger-children>*:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.stagger-children>*:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.stagger-children>*:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.stagger-children>*:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.stagger-children>*:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+@keyframes staggerFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Hover Effects ── */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-3px);
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+}
+
+/* ── Ripple Effect ── */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ripple:active::after {
+  animation: rippleAnim 0.4s ease;
+}
+
+@keyframes rippleAnim {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(4);
+    opacity: 0;
+  }
+}
+
+/* ── Glow Pulse for Score ── */
+.score-glow-green {
+  animation: scoreGlowGreen 2s ease-in-out infinite;
+}
+
+.score-glow-amber {
+  animation: scoreGlowAmber 2s ease-in-out infinite;
+}
+
+.score-glow-red {
+  animation: scoreGlowRed 2s ease-in-out infinite;
+}
+
+@keyframes scoreGlowGreen {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.4));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 20px rgba(34, 197, 94, 0.8));
+  }
+}
+
+@keyframes scoreGlowAmber {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.4));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.8));
+  }
+}
+
+@keyframes scoreGlowRed {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.4));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.8));
+  }
+}
+
+/* ── Particle orbits ── */
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateX(60px) rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg) translateX(60px) rotate(-360deg);
+  }
+}
+
+/* ── Number Counter Animation ── */
+.count-up {
+  display: inline-block;
+}
+
+/* ── Weather banner animation ── */
+@keyframes weatherSway {
+
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+.weather-icon {
+  display: inline-block;
+  animation: weatherSway 2s ease-in-out infinite;
+}
+
+/* ── Slider gradient track ── */
+.range-gradient {
+  background: linear-gradient(to right,
+      #22C55E 0%,
+      #22C55E var(--safe-end),
+      #FFBB44 var(--safe-end),
+      #FFBB44 var(--warn-end),
+      #EF4444 var(--warn-end),
+      #EF4444 100%) !important;
+}
+
+/* ── CNG Input Special ── */
+.cng-section {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.03));
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.cng-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #60A5FA;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── API Key Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 20px;
+}
+
+.modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  width: 100%;
+  max-width: 380px;
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.modal-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+/* ── Comparison Screen ── */
+.compare-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.compare-vehicle-selector {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-card);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--transition-normal);
+}
+
+.compare-vehicle-selector.selected {
+  border-color: var(--brand-orange);
+  background: rgba(255, 107, 53, 0.08);
+}
+
+.compare-metric {
+  display: grid;
+  grid-template-columns: 1fr 80px 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.compare-val {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.compare-metric-name {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Mechanic Map Placeholder ── */
+.map-placeholder {
+  height: 180px;
+  background: linear-gradient(135deg, #0F1929, #1A2235);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.map-placeholder::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 107, 53, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 107, 53, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.map-pin {
+  font-size: 2.5rem;
+  position: relative;
+  z-index: 1;
+  animation: mapPin 1.5s ease-in-out infinite;
+}
+
+@keyframes mapPin {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.map-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  position: relative;
+  z-index: 1;
+}
+
+.mechanic-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.mechanic-item:hover {
+  border-color: var(--border-orange);
+}
+
+.mechanic-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 107, 53, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.mechanic-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.mechanic-rating {
+  font-size: 0.72rem;
+  color: var(--brand-amber);
+}
+
+.mechanic-dist {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.mechanic-open {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--brand-green);
+  margin-left: 4px;
+}
+
+/* ── Responsive for web preview ── */
+@media (min-width: 431px) {
+  #app {
+    box-shadow: 0 0 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    border-radius: 0;
+    min-height: 100vh;
+  }
+
+  body {
+    background: radial-gradient(ellipse at center, #111827 0%, #0A0E1A 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+}
