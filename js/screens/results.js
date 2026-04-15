@@ -585,9 +585,6 @@ function resultsReadAloud() {
     setTimeout(doSpeak, 500);
   }
 }
-  saveState();
-  renderResultsScreen();
-}
 
 function openMechanicFinder() {
   const query = encodeURIComponent('bike mechanic near me');
