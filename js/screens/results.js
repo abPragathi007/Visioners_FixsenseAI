@@ -269,6 +269,7 @@ function renderResultsScreen() {
   const colorHex = getScoreHex(score);
   const vehicle = State.vehicles.find(v => v.id === State.diagnoseInputs.vehicleId);
   const isHi = State.language === 'hi';
+  const isKn = State.language === 'kn';
 
   el.innerHTML = `
     <!-- Header -->
@@ -584,9 +585,6 @@ function resultsReadAloud() {
     synth.addEventListener('voiceschanged', doSpeak, { once: true });
     setTimeout(doSpeak, 500);
   }
-}
-  saveState();
-  renderResultsScreen();
 }
 
 function openMechanicFinder() {
